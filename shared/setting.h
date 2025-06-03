@@ -3,7 +3,7 @@
 
 #define SIGNAL_LIST                        \
     {8, 0, 0, 240, "Speed"},               \
-        {7.8, 0, -60, 60, "Temperature"},  \
+        {7, 0, -60, 60, "Temperature"},    \
         {7, 15, 0, 100, "Battery"},        \
         {1, 22, 0, 1, "Left Turn Signal"}, \
         {1, 22, 0, 1, "Right Turn Signal"}
