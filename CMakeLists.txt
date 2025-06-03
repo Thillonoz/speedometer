@@ -69,41 +69,52 @@ add_custom_target(server
 )
 
 # Handle MaterialIcons.ttf font install
+# === Install MaterialIcons.ttf from local res folder ===
 set(FONT_NAME "MaterialIcons.ttf")
-set(FONT_SOURCE_DIR "${CMAKE_SOURCE_DIR}/resources")
-set(FONT_SOURCE_PATH "${FONT_SOURCE_DIR}/${FONT_NAME}")
+set(FONT_SOURCE_PATH "${CMAKE_SOURCE_DIR}/desktop/client/res/${FONT_NAME}")
 set(FONT_DEST_DIR "$ENV{HOME}/.local/share/fonts")
 set(FONT_DEST_PATH "${FONT_DEST_DIR}/${FONT_NAME}")
-set(FONT_URL "https://github.com/google/material-design-icons/raw/master/font/MaterialIcons-Regular.ttf")
 
-# Download font if it's missing in source tree
-if(NOT EXISTS "${FONT_SOURCE_PATH}")
-    message(STATUS "MaterialIcons.ttf not found in project. Downloading...")
-    file(MAKE_DIRECTORY "${FONT_SOURCE_DIR}")
-    file(DOWNLOAD "${FONT_URL}" "${FONT_SOURCE_PATH}" SHOW_PROGRESS STATUS DOWNLOAD_STATUS)
+# Only install if it's not already installed in ~/.local/share/fonts
+if(NOT EXISTS "${FONT_DEST_PATH}")
+    message(STATUS "MaterialIcons.ttf not found in user fonts. Installing from local res...")
 
-    list(GET DOWNLOAD_STATUS 0 DOWNLOAD_CODE)
-    if(NOT DOWNLOAD_CODE EQUAL 0)
-        message(FATAL_ERROR "Failed to download MaterialIcons.ttf from ${FONT_URL}")
+    if(NOT EXISTS "${FONT_SOURCE_PATH}")
+        message(FATAL_ERROR "Local font file not found: ${FONT_SOURCE_PATH}")
+    endif()
+
+    file(MAKE_DIRECTORY "${FONT_DEST_DIR}")
+    file(COPY "${FONT_SOURCE_PATH}" DESTINATION "${FONT_DEST_DIR}")
+
+    execute_process(
+        COMMAND fc-cache -f -v "${FONT_DEST_DIR}"
+        RESULT_VARIABLE FC_RESULT
+        OUTPUT_VARIABLE FC_OUTPUT
+        ERROR_VARIABLE FC_ERROR
+    )
+
+    if(NOT FC_RESULT EQUAL 0)
+        message(WARNING "fc-cache failed: ${FC_ERROR}")
+    else()
+        message(STATUS "fc-cache succeeded:\n${FC_OUTPUT}")
     endif()
 endif()
 
-# Create custom target for installing the font system-wide for user
+# Dummy file to hook into build system
+set(FONT_DUMMY_FILE "${CMAKE_BINARY_DIR}/.font_installed_stamp")
+
 add_custom_command(
-    OUTPUT "${FONT_DEST_PATH}"
-    COMMAND ${CMAKE_COMMAND} -E make_directory "${FONT_DEST_DIR}"
-    COMMAND ${CMAKE_COMMAND} -E copy "${FONT_SOURCE_PATH}" "${FONT_DEST_PATH}"
-    COMMAND fc-cache -f -v "${FONT_DEST_DIR}"
-    COMMENT "Installing MaterialIcons.ttf to ${FONT_DEST_DIR} and updating font cache"
+    OUTPUT "${FONT_DUMMY_FILE}"
+    COMMAND ${CMAKE_COMMAND} -E touch "${FONT_DUMMY_FILE}"
+    COMMENT "Marking font installed"
     VERBATIM
 )
 
 add_custom_target(install_fonts
-    DEPENDS "${FONT_DEST_PATH}"
-    COMMENT "Trigger font installation"
+    DEPENDS "${FONT_DUMMY_FILE}"
+    
 )
 
-# Automatically install font before building binaries or custom targets
 add_dependencies(desktop_client install_fonts)
 add_dependencies(desktop_server install_fonts)
 add_dependencies(client install_fonts)
