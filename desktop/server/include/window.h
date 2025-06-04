@@ -10,27 +10,25 @@
 #include <QLabel>
 #include <QSlider>
 
-#define SPEED_SUFFIX " Km/h"
-#define TEMPERATURE_SUFFIX " °C"
-#define BATTERY_SUFFIX " %"
-
-#define SLIDER_WIDTH (300)
-#define SLIDER_LABEL_CHAR_SIZE 8
-#define CALC_LABEL_WIDTH(x) (8 * (x + 1))
-
 class Window : public QDialog {
-  // --- temp
-  int speedValue{0};
-  int temperatureValue{0};
-  int BatteryLevelValue{0};
-  enum indicatorValue {
-    none,
-    left,
-    right,
-    warning
-  } indicatorValue{indicatorValue::none};
+  // --- temp, may need for communication tasks.
+  // int speedValue{0};
+  // int temperatureValue{0};
+  // int BatteryLevelValue{0};
+  // enum indicatorValue {
+  //   none,
+  //   left,
+  //   right,
+  //   warning
+  // } indicatorValue{indicatorValue::none};
   // ---
+  static constexpr const char *SPEED_SUFFIX{" Km/h"};
+  static constexpr const char *TEMPERATURE_SUFFIX{" °C"};
+  static constexpr const char *BATTERY_SUFFIX{" %"};
+  static constexpr int SLIDER_WIDTH{500};
+  static constexpr int SLIDER_LABEL_CHAR_SIZE{8};
 
+private:
   QVBoxLayout mainLayout;
   QFormLayout formLayout;
 
@@ -48,12 +46,16 @@ class Window : public QDialog {
   QCheckBox indicatorRight;
   QCheckBox indicatorWarning;
 
+private:
   void onSlideSpeed(int);
   void onSlideTemperature(int);
   void onSlideBatteryLevel(int);
   void onClickLeftIndicator(int);
   void onClickRightIndicator(int);
   void onClickWarningIndicator(int);
+
+private:
+  static int CALC_LABEL_WIDTH(int x) { return (8 * (x + 1)); };
 
 public:
   Window();
