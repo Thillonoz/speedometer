@@ -1,8 +1,8 @@
 #include "canvas.h"
 
-#include <iostream>
 #include <QtMath>
 #include <QTimer>
+#include <QFont>
 #include <QPainter>
 
 static constexpr int a_offset_width = 80;
@@ -37,6 +37,14 @@ static constexpr int interval = 16U; // ~60fps
 
 static const QPen pen_white(Qt::white, pen_width);
 static const QPen pen_red(Qt::red, pen_width);
+
+static constexpr QChar speed_icon = QChar(0xe9e4);
+
+static constexpr float speed_icon_top_offset = 0.33f;
+static constexpr float speed_icon_size = 40.0f;
+static constexpr float speed_text_size_w = 200.0f;
+static constexpr float speed_text_size_h = 40.0f;
+static constexpr float speed_text_offset = 0.07f;
 
 static QPointF center;
 static QPointF arc_center;
@@ -83,9 +91,11 @@ void Canvas::paintEvent(QPaintEvent *event) {
     QPainter painter(this);
     painter.setRenderHints(QPainter::Antialiasing, true);
 
+
     draw_circle(_d, painter);
     draw_speed(start_angle, painter);
     show_needle_speed(painter);
+    show_text_speed(painter);
 }
 
 void Canvas::draw_circle(const float _d, QPainter &painter) {
@@ -196,6 +206,29 @@ void Canvas::show_needle_speed(QPainter &painter) {
     painter.setBrush(Qt::NoBrush);
 }
 
+void Canvas::show_text_speed(QPainter &painter) {
+    const QFont font("Arial", text_font_size, QFont::Bold);
+    painter.setPen(pen_white);
+    painter.setFont(font);
+
+    const QRectF icon_rect(
+        arc_center.x() - speed_icon_size / 2.0, // center horizontally
+        arc_center.y() + arrow_circle_outline_radius / speed_icon_top_offset,
+        speed_icon_size,
+        speed_icon_size
+    );
+
+    const QRectF text_rect(
+        arc_center.x() - speed_text_size_w / 2.0, // center horizontally
+        arc_center.y() + arrow_circle_outline_radius / (speed_icon_top_offset - speed_text_offset),
+        speed_text_size_w,
+        speed_text_size_h
+    );
+
+    painter.drawText(icon_rect, Qt::AlignCenter, speed_icon);
+    painter.drawText(text_rect, Qt::AlignCenter, QString::number(speed_from_angle()) + QString(" km/h"));
+}
+
 void Canvas::set_speed(int speed) const {
     speed = qBound(0, speed, max_speed);
 
@@ -206,4 +239,19 @@ void Canvas::set_speed(int speed) const {
     target_angle_deg = qDegreesToRadians(angle_deg);
 
     needle_timer->start();
+}
+
+int Canvas::speed_from_angle() {
+    const float angle_range = (circle_end_angle - circle_start_angle) - 2 * line_offset_angle;
+    const float angle_deg = qRadiansToDegrees(current_angle_deg);
+    float normalized_angle = circle_end_angle - line_offset_angle - angle_deg;
+
+    if (normalized_angle < 0)
+        normalized_angle = 0;
+    if (normalized_angle > angle_range)
+        normalized_angle = angle_range;
+
+    float percentage = normalized_angle / angle_range;
+    int speed = static_cast<int>(percentage * max_speed);
+    return speed;
 }
