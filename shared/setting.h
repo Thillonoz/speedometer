@@ -1,12 +1,12 @@
 #ifndef SETTING_H
 #define SETTING_H
 
-#define SIGNAL_LIST                        \
-    {8, 0, 0, 240, "Speed"},               \
-        {7, 0, -60, 60, "Temperature"},    \
-        {7, 15, 0, 100, "Battery"},        \
-        {1, 22, 0, 1, "Left Turn Signal"}, \
-        {1, 22, 0, 1, "Right Turn Signal"}
+#define SIGNAL_LIST                          \
+    {{8, 0, 0, 240}, "speed"},               \
+        {{7, 0, -60, 60}, "temperature"},    \
+        {{7, 15, 0, 100}, "battery"},        \
+        {{1, 22, 0, 1}, "left_turn_signal"}, \
+        {{1, 22, 0, 1}, "right_turn_signal"}
 
 #define BAUDRATE 1048576
 #define BUFLEN 3
@@ -16,23 +16,21 @@
 #include <map>
 #include <climits>
 #include <string>
+#include <stdexcept>
 
 namespace Setting
 {
-    // Communication protocol selection
-    enum class Protocol
-    {
-        UART,
-        TCP,
-        COM
-    };
-
-    struct SignalInfo
+    struct SignalMeta
     {
         int scale;
         int startBit;
         int min;
         int max;
+    };
+
+    struct SignalInfo
+    {
+        SignalMeta meta;
         const char *name;
     };
 
@@ -42,7 +40,21 @@ namespace Setting
     constexpr size_t SignalCount = sizeof(SignalList) / sizeof(SignalList[0]);
     constexpr int BaudRate = BAUDRATE;
     constexpr int BufferLength = BUFLEN;
+
+    inline SignalInfo getSignalInfo(const std::string &name)
+    {
+
+        for (const auto &signal : SignalList)
+        {
+            if (signal.name == name)
+            {
+                return signal;
+            }
+        }
+        throw std::out_of_range("Signal not found");
+    }
 }
+
 #endif
 
 #endif // SETTING_H
