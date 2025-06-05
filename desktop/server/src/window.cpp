@@ -13,17 +13,17 @@ Window::Window()
   mainLayout.addLayout(&formLayout);
   mainLayout.setSizeConstraint(QLayout::SetFixedSize);
 
-  startLabelText = Setting::getSignalInfo("speed").name;
+  startLabelText = Setting::getSignalInfo("speed")->name;
   startLabelText[0] = startLabelText[0].toUpper();
   startLabelText.append(":");
   formLayout.addRow(startLabelText, &speedSlideBarLayout);
 
-  startLabelText = Setting::getSignalInfo("temperature").name;
+  startLabelText = Setting::getSignalInfo("temperature")->name;
   startLabelText[0] = startLabelText[0].toUpper();
   startLabelText.append(":");
   formLayout.addRow(startLabelText, &temperatureSlideBarLayout);
 
-  startLabelText = Setting::getSignalInfo("battery").name;
+  startLabelText = Setting::getSignalInfo("battery")->name;
   startLabelText[0] = startLabelText[0].toUpper();
   startLabelText.append(":");
   formLayout.addRow(startLabelText, &batteryLevelSlideBarLayout);
@@ -52,23 +52,23 @@ Window::Window()
   indicatorLayout.addWidget(&indicatorWarning);
 
   // actions & value properties
-  speedSlider.setMinimum(Setting::getSignalInfo("speed").meta.min);
-  speedSlider.setMaximum(Setting::getSignalInfo("speed").meta.max);
+  speedSlider.setMinimum(Setting::getSignalInfo("speed")->meta.min);
+  speedSlider.setMaximum(Setting::getSignalInfo("speed")->meta.max);
   startLabelText.setNum(speedSlider.value());
   startLabelText.append(SPEED_SUFFIX);
   speedLabel.setText(startLabelText);
   connect(&speedSlider, &QSlider::valueChanged, this, &Window::onSlideSpeed);
 
-  temperatureSlider.setMinimum(Setting::getSignalInfo("temperature").meta.min);
-  temperatureSlider.setMaximum(Setting::getSignalInfo("temperature").meta.max);
+  temperatureSlider.setMinimum(Setting::getSignalInfo("temperature")->meta.min);
+  temperatureSlider.setMaximum(Setting::getSignalInfo("temperature")->meta.max);
   startLabelText.setNum(temperatureSlider.value());
   startLabelText.append(TEMPERATURE_SUFFIX);
   temperatureLabel.setText(startLabelText);
   connect(&temperatureSlider, &QSlider::valueChanged, this,
           &Window::onSlideTemperature);
 
-  batteryLevelSlider.setMinimum(Setting::getSignalInfo("battery").meta.min);
-  batteryLevelSlider.setMaximum(Setting::getSignalInfo("battery").meta.max);
+  batteryLevelSlider.setMinimum(Setting::getSignalInfo("battery")->meta.min);
+  batteryLevelSlider.setMaximum(Setting::getSignalInfo("battery")->meta.max);
   startLabelText.setNum(batteryLevelSlider.value());
   startLabelText.append(BATTERY_SUFFIX);
   batteryLevelLabel.setText(startLabelText);
@@ -164,6 +164,6 @@ void Window::onClickRightIndicator(int _state)
 
 void Window::onClickWarningIndicator(int _state)
 {
+  (void)_state;
   // Send communication?
-  (void)_state; // Avoid unused parameter warning
 }
