@@ -9,64 +9,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_compile_options(-Wall -Wextra -Wpedantic -Werror)
 
 # Find Qt6 components for GUI and SerialPort
-find_package(Qt6 REQUIRED COMPONENTS Core Widgets Gui SerialPort)
+find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
 
-# Explicitly list sources for desktop client
-add_executable(desktop_client
-    desktop/client/main.cpp
-    desktop/client/src/canvas.cpp
-    desktop/client/src/window.cpp
-    desktop/client/src/comservice.cpp
-    desktop/client/src/tcpservice.cpp
-    desktop/client/src/uartservice.cpp
-)
-
-target_include_directories(desktop_client PUBLIC
-    ${CMAKE_SOURCE_DIR}/desktop/client/include
-    ${CMAKE_SOURCE_DIR}/shared
-)
-
-target_link_libraries(desktop_client PUBLIC
-    Qt6::Core
-    Qt6::Widgets
-    Qt6::Gui
-    Qt6::SerialPort
-)
-
-# Explicitly list sources for desktop server
-add_executable(desktop_server
-    desktop/server/main.cpp
-    desktop/server/src/window.cpp
-    desktop/server/src/comservice.cpp
-    desktop/server/src/tcpservice.cpp
-    desktop/server/src/uartservice.cpp
-)
-
-target_include_directories(desktop_server PRIVATE
-    ${CMAKE_SOURCE_DIR}/desktop/server/include
-    ${CMAKE_SOURCE_DIR}/shared
-)
-
-target_link_libraries(desktop_server PRIVATE
-    Qt6::Core
-    Qt6::Widgets
-    Qt6::Gui
-    Qt6::SerialPort
-)
-
-# Add a custom target to build client
-add_custom_target(client
-    COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target desktop_client
-    DEPENDS desktop_client
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-)
-
-# Add a custom target to build server
-add_custom_target(server
-    COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target desktop_server
-    DEPENDS desktop_server
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-)
 
 # Handle MaterialIcons.ttf font install
 # === Install MaterialIcons.ttf from local res folder ===
@@ -100,6 +44,42 @@ if(NOT EXISTS "${FONT_DEST_PATH}")
     endif()
 endif()
 
+# Explicitly list sources for desktop client
+add_executable(desktop_client
+    desktop/client/main.cpp
+    desktop/client/src/canvas.cpp
+    desktop/client/src/window.cpp
+
+)
+
+target_include_directories(desktop_client PUBLIC
+    ${CMAKE_SOURCE_DIR}/desktop/client/include
+    ${CMAKE_SOURCE_DIR}/shared
+)
+
+target_link_libraries(desktop_client PUBLIC
+    Qt6::Core
+    Qt6::Widgets
+  
+)
+
+
+# Add a custom target to build client
+add_custom_target(client
+    COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target desktop_client
+    DEPENDS desktop_client
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+
+# Add a custom target to build server
+add_custom_target(server
+    COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target desktop_server
+    DEPENDS desktop_server
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+
+
+
 # Dummy file to hook into build system
 set(FONT_DUMMY_FILE "${CMAKE_BINARY_DIR}/.font_installed_stamp")
 
@@ -114,6 +94,24 @@ add_custom_target(install_fonts
     DEPENDS "${FONT_DUMMY_FILE}"
     
 )
+
+# Explicitly list sources for desktop server
+add_executable(desktop_server
+    desktop/server/main.cpp
+    desktop/server/src/window.cpp
+)
+
+target_include_directories(desktop_server PRIVATE
+    ${CMAKE_SOURCE_DIR}/desktop/server/include
+    ${CMAKE_SOURCE_DIR}/shared
+)
+
+target_link_libraries(desktop_server PRIVATE
+    Qt6::Core
+    Qt6::Widgets
+   
+)
+
 
 add_dependencies(desktop_client install_fonts)
 add_dependencies(desktop_server install_fonts)
