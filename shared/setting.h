@@ -16,7 +16,6 @@
 #include <map>
 #include <climits>
 #include <string>
-#include <stdexcept>
 
 namespace Setting
 {
@@ -41,17 +40,18 @@ namespace Setting
     constexpr int BaudRate = BAUDRATE;
     constexpr int BufferLength = BUFLEN;
 
-    inline SignalInfo getSignalInfo(const std::string &name)
+    inline const SignalInfo *getSignalInfo(const std::string &name)
     {
-
+        const SignalInfo *result = nullptr;
         for (const auto &signal : SignalList)
         {
             if (signal.name == name)
             {
-                return signal;
+                result = &signal;
+                break;
             }
         }
-        throw std::out_of_range("Signal not found");
+        return result;
     }
 }
 
