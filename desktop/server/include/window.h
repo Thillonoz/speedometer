@@ -11,17 +11,6 @@
 #include <QSlider>
 
 class Window : public QDialog {
-  // --- temp, may need for communication tasks.
-  // int speedValue{0};
-  // int temperatureValue{0};
-  // int BatteryLevelValue{0};
-  // enum indicatorValue {
-  //   none,
-  //   left,
-  //   right,
-  //   warning
-  // } indicatorValue{indicatorValue::none};
-  // ---
   static constexpr const char *SPEED_SUFFIX{" Km/h"};
   static constexpr const char *TEMPERATURE_SUFFIX{" °C"};
   static constexpr const char *BATTERY_SUFFIX{" %"};
