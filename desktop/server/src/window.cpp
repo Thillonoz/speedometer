@@ -162,8 +162,7 @@ void Window::onClickRightIndicator(int _state)
   }
 }
 
-void Window::onClickWarningIndicator(int _state)
-{
+void Window::onClickWarningIndicator(int _state) {
+  (void)_state;
   // Send communication?
-  (void)_state; // Avoid unused parameter warning
 }
