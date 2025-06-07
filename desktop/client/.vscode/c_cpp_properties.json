@@ -4,8 +4,8 @@
             "name": "Linux",
             "includePath": [
                 "${default}",
-                "${workspaceFolder}/desktop/client/include",
-                "${workspaceFolder}/shared"
+                "${workspaceFolder}/include",
+                "${workspaceFolder}/../../shared"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/gcc",
