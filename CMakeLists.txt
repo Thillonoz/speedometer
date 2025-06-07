@@ -5,4 +5,81 @@ project(av24tr LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 add_compile_options(-Wall -Wextra -Wpedantic -Werror)
+
+# Find Qt6 components for GUI and SerialPort
+find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
+
+
+# Handle MaterialIcons.ttf font install
+# === Install MaterialIcons.ttf from local res folder ===
+set(FONT_NAME "MaterialIcons.ttf")
+set(FONT_SOURCE_PATH "${CMAKE_SOURCE_DIR}/desktop/client/res/${FONT_NAME}")
+set(FONT_DEST_DIR "$ENV{HOME}/.local/share/fonts")
+set(FONT_DEST_PATH "${FONT_DEST_DIR}/${FONT_NAME}")
+
+# Only install if it's not already installed in ~/.local/share/fonts
+if(NOT EXISTS "${FONT_DEST_PATH}")
+    message(STATUS "MaterialIcons.ttf not found in user fonts. Installing from local res...")
+
+    if(NOT EXISTS "${FONT_SOURCE_PATH}")
+        message(FATAL_ERROR "Local font file not found: ${FONT_SOURCE_PATH}")
+    endif()
+
+    file(MAKE_DIRECTORY "${FONT_DEST_DIR}")
+    file(COPY "${FONT_SOURCE_PATH}" DESTINATION "${FONT_DEST_DIR}")
+
+    execute_process(
+        COMMAND fc-cache -f -v "${FONT_DEST_DIR}"
+        RESULT_VARIABLE FC_RESULT
+        OUTPUT_VARIABLE FC_OUTPUT
+        ERROR_VARIABLE FC_ERROR
+    )
+
+    if(NOT FC_RESULT EQUAL 0)
+        message(WARNING "fc-cache failed: ${FC_ERROR}")
+    else()
+        message(STATUS "fc-cache succeeded:\n${FC_OUTPUT}")
+    endif()
+endif()
+
+# Explicitly list sources for desktop client
+add_executable(desktop_client
+    desktop/client/main.cpp
+    desktop/client/src/canvas.cpp
+    desktop/client/src/window.cpp
+
+)
+
+target_include_directories(desktop_client PUBLIC
+    ${CMAKE_SOURCE_DIR}/desktop/client/include
+    ${CMAKE_SOURCE_DIR}/shared
+)
+
+target_link_libraries(desktop_client PUBLIC
+    Qt6::Core
+    Qt6::Widgets
+  
+)
+
+
+# Explicitly list sources for desktop server
+add_executable(desktop_server
+    desktop/server/main.cpp
+    desktop/server/src/window.cpp
+)
+
+target_include_directories(desktop_server PRIVATE
+    ${CMAKE_SOURCE_DIR}/desktop/server/include
+    ${CMAKE_SOURCE_DIR}/shared
+)
+
+target_link_libraries(desktop_server PRIVATE
+    Qt6::Core
+    Qt6::Widgets
+   
+)
+
+
+
