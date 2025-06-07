@@ -1,7 +1,8 @@
 #include "window.h"
 #include "setting.h"
 
-Window::Window() {
+Window::Window()
+{
   QString startLabelText;
 
   setWindowTitle("Server");
@@ -12,15 +13,18 @@ Window::Window() {
   mainLayout.addLayout(&formLayout);
   mainLayout.setSizeConstraint(QLayout::SetFixedSize);
 
-  startLabelText = Setting::SignalList[0].name;
+  startLabelText = Setting::getSignalInfo("speed")->name;
+  startLabelText[0] = startLabelText[0].toUpper();
   startLabelText.append(":");
   formLayout.addRow(startLabelText, &speedSlideBarLayout);
 
-  startLabelText = Setting::SignalList[1].name;
+  startLabelText = Setting::getSignalInfo("temperature")->name;
+  startLabelText[0] = startLabelText[0].toUpper();
   startLabelText.append(":");
   formLayout.addRow(startLabelText, &temperatureSlideBarLayout);
 
-  startLabelText = Setting::SignalList[2].name;
+  startLabelText = Setting::getSignalInfo("battery")->name;
+  startLabelText[0] = startLabelText[0].toUpper();
   startLabelText.append(":");
   formLayout.addRow(startLabelText, &batteryLevelSlideBarLayout);
 
@@ -48,23 +52,23 @@ Window::Window() {
   indicatorLayout.addWidget(&indicatorWarning);
 
   // actions & value properties
-  speedSlider.setMinimum(Setting::SignalList[0].min);
-  speedSlider.setMaximum(Setting::SignalList[0].max);
+  speedSlider.setMinimum(Setting::getSignalInfo("speed")->meta.min);
+  speedSlider.setMaximum(Setting::getSignalInfo("speed")->meta.max);
   startLabelText.setNum(speedSlider.value());
   startLabelText.append(SPEED_SUFFIX);
   speedLabel.setText(startLabelText);
   connect(&speedSlider, &QSlider::valueChanged, this, &Window::onSlideSpeed);
 
-  temperatureSlider.setMinimum(Setting::SignalList[1].min);
-  temperatureSlider.setMaximum(Setting::SignalList[1].max);
+  temperatureSlider.setMinimum(Setting::getSignalInfo("temperature")->meta.min);
+  temperatureSlider.setMaximum(Setting::getSignalInfo("temperature")->meta.max);
   startLabelText.setNum(temperatureSlider.value());
   startLabelText.append(TEMPERATURE_SUFFIX);
   temperatureLabel.setText(startLabelText);
   connect(&temperatureSlider, &QSlider::valueChanged, this,
           &Window::onSlideTemperature);
 
-  batteryLevelSlider.setMinimum(Setting::SignalList[2].min);
-  batteryLevelSlider.setMaximum(Setting::SignalList[2].max);
+  batteryLevelSlider.setMinimum(Setting::getSignalInfo("battery")->meta.min);
+  batteryLevelSlider.setMaximum(Setting::getSignalInfo("battery")->meta.max);
   startLabelText.setNum(batteryLevelSlider.value());
   startLabelText.append(BATTERY_SUFFIX);
   batteryLevelLabel.setText(startLabelText);
@@ -84,7 +88,8 @@ Window::Window() {
           &Window::onClickWarningIndicator);
 }
 
-void Window::onSlideSpeed(int _value) {
+void Window::onSlideSpeed(int _value)
+{
   QString temp;
   temp.setNum(_value);
   temp.append(SPEED_SUFFIX);
@@ -93,7 +98,8 @@ void Window::onSlideSpeed(int _value) {
   // Send communication?
 }
 
-void Window::onSlideTemperature(int _value) {
+void Window::onSlideTemperature(int _value)
+{
   QString temp;
   temp.setNum(_value);
   temp.append(TEMPERATURE_SUFFIX);
@@ -102,7 +108,8 @@ void Window::onSlideTemperature(int _value) {
   // Send communication?
 }
 
-void Window::onSlideBatteryLevel(int _value) {
+void Window::onSlideBatteryLevel(int _value)
+{
   QString temp;
   temp.setNum(_value);
   temp.append(BATTERY_SUFFIX);
@@ -111,32 +118,46 @@ void Window::onSlideBatteryLevel(int _value) {
   // Send communication?
 }
 
-void Window::onClickLeftIndicator(int _state) {
-  if (_state == Qt::CheckState::Checked) {
+void Window::onClickLeftIndicator(int _state)
+{
+  if (_state == Qt::CheckState::Checked)
+  {
     indicatorRight.setDisabled(true);
     indicatorRight.setCheckState(Qt::CheckState::Unchecked);
-  } else {
+  }
+  else
+  {
     indicatorRight.setDisabled(false);
   }
 
-  if (indicatorWarning.checkState() == Qt::CheckState::Unchecked) {
+  if (indicatorWarning.checkState() == Qt::CheckState::Unchecked)
+  {
     // Send communication?
-  } else {
+  }
+  else
+  {
     ;
   }
 }
 
-void Window::onClickRightIndicator(int _state) {
-  if (_state == Qt::CheckState::Checked) {
+void Window::onClickRightIndicator(int _state)
+{
+  if (_state == Qt::CheckState::Checked)
+  {
     indicatorLeft.setDisabled(true);
     indicatorLeft.setCheckState(Qt::CheckState::Unchecked);
-  } else {
+  }
+  else
+  {
     indicatorLeft.setDisabled(false);
   }
 
-  if (indicatorWarning.checkState() == Qt::CheckState::Unchecked) {
+  if (indicatorWarning.checkState() == Qt::CheckState::Unchecked)
+  {
     // Send communication?
-  } else {
+  }
+  else
+  {
     ;
   }
 }
