@@ -6,12 +6,12 @@
 
 #ifdef __cplusplus
 
-#define SIGNAL_LIST                          \
-    {{8, 0, 0, 240}, "speed"},               \
-        {{7, 0, -60, 60}, "temperature"},    \
-        {{7, 15, 0, 100}, "battery"},        \
-        {{1, 22, 0, 1}, "left_turn_signal"}, \
-        {{1, 22, 0, 1}, "right_turn_signal"}
+#define SIGNAL_LIST {                    \
+    {{8, 0, 0, 240}, "speed"},           \
+    {{7, 0, -60, 60}, "temperature"},    \
+    {{7, 15, 0, 100}, "battery"},        \
+    {{1, 22, 0, 1}, "left_turn_signal"}, \
+    {{1, 22, 0, 1}, "right_turn_signal"}}
 
 #include <map>
 #include <string>
@@ -21,68 +21,39 @@ namespace Setting
     constexpr int BaudRate = BAUDRATE;
     constexpr int BufferLength = BUFLEN;
 
-    struct SignalInfo
+    class Signal
     {
-        uint8_t length;
-        uint8_t start;
-        int min;
-        int max;
-
-        int operator[](const std::string &key) const
+        struct value_t
         {
-            if (key == "length")
-                return length;
-            if (key == "start")
-                return start;
-            if (key == "min")
-                return min;
-            if (key == "max")
-                return max;
-            throw std::out_of_range("Invalid key: " + key);
+            int length, start, min, max;
+        };
+        using key_t = std::string;
+
+        std::map<key_t, value_t> signal;
+
+        Signal()
+        {
+            const std::tuple<value_t, key_t> list[] = SIGNAL_LIST;
+#undef SIGNAL_LIST
+
+            for (const auto &elem : list)
+            {
+                signal.insert({std::get<key_t>(elem), std::get<value_t>(elem)});
+            }
         }
-    };
-
-    class Signals
-    {
-    private:
-        std::map<std::string, SignalInfo> signal_map;
-
-        Signals();
 
     public:
-        static Signals &handle();
-
-        Signals(const Signals &) = delete;
-        void operator=(const Signals &) = delete;
-
-        const SignalInfo &operator[](const std::string &name) const;
-    };
-
-    static const std::pair<SignalInfo, const char *> signalArray[] = {
-        SIGNAL_LIST};
-
-    inline Signals::Signals()
-    {
-        for (const auto &[info, name] : signalArray)
+        const value_t &operator[](const key_t &key)
         {
-            signal_map[name] = info;
+            return signal[key];
         }
-    }
 
-    inline Signals &Signals::handle()
-    {
-        static Signals instance;
-        return instance;
-    }
-
-    inline const SignalInfo &Signals::operator[](const std::string &name) const
-    {
-        auto it = signal_map.find(name);
-        if (it == signal_map.end())
-            throw std::out_of_range("Signal not found: " + name);
-        return it->second;
-    }
-
+        static Signal &handle(void)
+        {
+            static Signal instance;
+            return instance;
+        }
+    };
 }
 
 #endif // __cplusplus

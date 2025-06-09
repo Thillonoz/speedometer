@@ -13,7 +13,7 @@ Window::Window()
   mainLayout.addLayout(&formLayout);
   mainLayout.setSizeConstraint(QLayout::SetFixedSize);
 
-  Setting::Signals &signal{Setting::Signals::handle()};
+  Setting::Signal &signal{Setting::Signal::handle()};
 
   startLabelText = "Speed";
   startLabelText.append(":");
