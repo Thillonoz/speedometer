@@ -36,15 +36,35 @@ static constexpr int text_step = 5;
 static constexpr int interval = 16U; // ~60fps
 
 static const QPen pen_white(Qt::white, pen_width);
+static const QPen pen_blue(Qt::blue, pen_width);
+static const QPen pen_yellow(Qt::yellow, pen_width);
+static const QPen pen_green(Qt::green, pen_width);
 static const QPen pen_red(Qt::red, pen_width);
 
 static constexpr QChar speed_icon = QChar(0xe9e4);
+static constexpr QChar temperature_icon = QChar(0xe1ff);
+static constexpr QChar battery_icon = QChar(0xebdc);
 
 static constexpr float speed_icon_top_offset = 0.33f;
 static constexpr float speed_icon_size = 40.0f;
 static constexpr float speed_text_size_w = 200.0f;
 static constexpr float speed_text_size_h = 40.0f;
 static constexpr float speed_text_offset = 0.07f;
+
+static constexpr float temperature_icon_width = 40.0f;
+static constexpr float temperature_icon_height = 85.0f;
+static constexpr float temperature_icon_top_offset = 0.4f;
+static constexpr float temperature_icon_width_offset = 9.0f;
+static constexpr float temperature_icon_font_size = 60.0f;
+static constexpr float temperature_text_font_size = 12.0f;
+static constexpr float temperature_text_top_offset = 0.12f;
+
+static constexpr float battery_icon_height = 100.0f;
+static constexpr float battery_icon_width = 40.0f;
+static constexpr float battery_icon_width_offset = 9.0f;
+static constexpr float battery_icon_top_offset = 30.4f;
+static constexpr float battery_text_top_offset = 65.4f;
+static constexpr float fill_margin_ratio = 0.90f;
 
 static QPointF center;
 static QPointF arc_center;
@@ -56,6 +76,12 @@ static float radius;
 static float current_angle_deg = qDegreesToRadians(static_cast<float>(circle_end_angle + line_offset_angle));
 static float target_angle_deg = current_angle_deg;
 
+static float current_battery_fill = 100;
+static float target_battery_fill = 100;
+static int current_battery = 100;
+
+static int current_temperature = 10;
+
 Canvas::Canvas(QWidget *parent) {
     setParent(parent);
     setFixedSize(parent->width() - offset, parent->height() - offset);
@@ -65,8 +91,11 @@ Canvas::Canvas(QWidget *parent) {
     needle_timer = new QTimer(this);
     needle_timer->setInterval(interval);
 
+    battery_timer = new QTimer(this);
+    battery_timer->setInterval(interval);
+
     connect(needle_timer, &QTimer::timeout, this, [this]() {
-        const float step = qDegreesToRadians(1.5f); // Convert degrees to radians for smooth motion
+        const float step = qDegreesToRadians(1.5f);
 
         if (qAbs(current_angle_deg - target_angle_deg) < step) {
             current_angle_deg = target_angle_deg;
@@ -74,7 +103,19 @@ Canvas::Canvas(QWidget *parent) {
         } else {
             current_angle_deg += (current_angle_deg < target_angle_deg) ? step : -step;
         }
-        update(); // trigger paintEvent()
+        update();
+    });
+
+    connect(battery_timer, &QTimer::timeout, this, [this]() {
+        const int step = 1;
+
+        if (qAbs(current_battery_fill - target_battery_fill) < step) {
+            current_battery_fill = target_battery_fill;
+            battery_timer->stop();
+        } else {
+            current_battery_fill += (current_battery_fill < target_battery_fill) ? step : -step;
+        }
+        update();
     });
 }
 
@@ -96,6 +137,8 @@ void Canvas::paintEvent(QPaintEvent *event) {
     draw_speed(start_angle, painter);
     show_needle_speed(painter);
     show_text_speed(painter);
+    show_temperature(painter);
+    show_battery(painter);
 }
 
 void Canvas::draw_circle(const float _d, QPainter &painter) {
@@ -241,6 +284,17 @@ void Canvas::set_speed(int speed) const {
     needle_timer->start();
 }
 
+void Canvas::set_temperature(int temperature) const {
+    current_temperature = temperature;
+}
+
+void Canvas::set_battery(int battery_percent) const {
+    current_battery = qBound(0, battery_percent, 100);
+    target_battery_fill = static_cast<float>(current_battery);
+    battery_timer->start();
+}
+
+
 int Canvas::speed_from_angle() {
     const float angle_range = (circle_end_angle - circle_start_angle) - 2 * line_offset_angle;
     const float angle_deg = qRadiansToDegrees(current_angle_deg);
@@ -254,4 +308,95 @@ int Canvas::speed_from_angle() {
     float percentage = normalized_angle / angle_range;
     int speed = static_cast<int>(percentage * max_speed);
     return speed;
+}
+
+void Canvas::show_temperature(QPainter &painter) {
+    const QFont font("Arial", temperature_icon_font_size);
+    painter.setFont(font);
+
+    if (current_temperature < 5) {
+        painter.setPen(pen_white);
+    } else if (current_temperature < 40) {
+        painter.setPen(pen_blue);
+    } else {
+        painter.setPen(pen_red);
+    }
+
+    const QRectF icon_rect(
+        arc_center.x() + temperature_icon_width * temperature_icon_width_offset,
+        arc_center.y() + arrow_circle_outline_radius / temperature_icon_top_offset,
+        temperature_icon_width,
+        temperature_icon_height
+    );
+
+    painter.drawText(icon_rect, Qt::AlignCenter, temperature_icon);
+
+    const QFont txt_font("Arial", temperature_text_font_size);
+
+    painter.setPen(pen_white);
+    painter.setFont(txt_font);
+
+    const QRectF text_rect(
+        arc_center.x() + temperature_icon_width * (temperature_icon_width_offset),
+        arc_center.y() + arrow_circle_outline_radius / (temperature_icon_top_offset - temperature_text_top_offset),
+        temperature_icon_width,
+        temperature_icon_height
+    );
+
+    painter.drawText(text_rect, Qt::AlignCenter, QString::number(current_temperature) + QString("°C"));
+}
+
+void Canvas::show_battery(QPainter &painter) {
+    const QFont font("Arial", 80);
+    QPen current_pen;
+    painter.setFont(font);
+
+    if (current_battery < 25) {
+        current_pen = pen_red;
+        painter.setBrush(Qt::red);
+    } else if (current_battery < 50) {
+        current_pen = pen_yellow;
+        painter.setBrush(Qt::yellow);
+    } else {
+        current_pen = pen_green;
+        painter.setBrush(Qt::green);
+    }
+
+    const QRectF icon_rect(
+        arc_center.x() + battery_icon_width * battery_icon_width_offset,
+        arc_center.y() - battery_icon_top_offset,
+        battery_icon_width,
+        battery_icon_height
+    );
+
+    const float usable_fill_height = battery_icon_height * fill_margin_ratio;
+    const float fill_height = (current_battery_fill / 100.0f) * usable_fill_height;
+
+    const QRectF fill_rect(
+        icon_rect.x(),
+        icon_rect.y() + (battery_icon_height - fill_height),
+        icon_rect.width(),
+        fill_height
+    );
+
+    const QRectF icon_fill_rect(fill_rect);
+    painter.setPen(Qt::NoPen);
+    painter.drawRect(icon_fill_rect);
+    painter.setBrush(Qt::NoBrush);
+
+    painter.setPen(current_pen);
+    painter.drawText(icon_rect, Qt::AlignCenter, battery_icon);
+    const QFont txt_font("Arial", temperature_text_font_size);
+
+    painter.setPen(pen_white);
+    painter.setFont(txt_font);
+
+    const QRectF text_rect(
+        arc_center.x() + battery_icon_width * battery_icon_width_offset,
+        arc_center.y() - (battery_icon_top_offset - battery_text_top_offset),
+        battery_icon_width,
+        battery_icon_height
+    );
+
+    painter.drawText(text_rect, Qt::AlignCenter, QString::number(current_battery_fill) + QString("%"));
 }

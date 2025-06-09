@@ -26,3 +26,11 @@ void Window::set_bg_color() {
 void Window::set_speed(const int speed) const {
     canvas->set_speed(speed);
 }
+
+void Window::set_temperature(const int temperature) const {
+    canvas->set_temperature(temperature);
+}
+
+void Window::set_battery(const int battery_percent) const {
+    canvas->set_battery(battery_percent);
+}

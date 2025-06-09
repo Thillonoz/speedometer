@@ -14,6 +14,10 @@ public:
     void set_bg_color();
 
     void set_speed(const int speed) const;
+
+    void set_temperature(const int temperature) const;
+
+    void set_battery(const int battery_percent) const;
 };
 
 #endif
