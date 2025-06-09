@@ -10,6 +10,7 @@ constexpr int height = 600;
 class Canvas : public QWidget {
     QTimer *needle_timer{};
     QTimer *battery_timer{};
+    QPainter *painter{};
 
     int offset = 40;
 
@@ -26,17 +27,17 @@ public:
     [[nodiscard]] static int speed_from_angle();
 
 protected:
-    static void show_needle_speed(QPainter &painter);
+    void show_needle_speed();
 
-    static void draw_speed(int &start_angle, QPainter &painter);
+    void draw_speed(int &start_angle);
 
-    static void draw_circle(float _d, QPainter &painter);
+    void draw_circle(float _d);
 
-    static void show_text_speed(QPainter &painter);
+    void show_text_speed();
 
-    static void show_temperature(QPainter &painter);
+    void show_temperature();
 
-    static void show_battery(QPainter &painter);
+    void show_battery();
 
     void paintEvent(QPaintEvent *event) override;
 };

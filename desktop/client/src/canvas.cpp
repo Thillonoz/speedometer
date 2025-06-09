@@ -3,7 +3,6 @@
 #include <QtMath>
 #include <QTimer>
 #include <QFont>
-#include <QPainter>
 
 static constexpr int a_offset_width = 80;
 static constexpr int a_offset_top = 70;
@@ -86,6 +85,8 @@ Canvas::Canvas(QWidget *parent) {
     setParent(parent);
     setFixedSize(parent->width() - offset, parent->height() - offset);
 
+    painter = nullptr;
+
     current_speed = max_speed;
 
     needle_timer = new QTimer(this);
@@ -122,6 +123,9 @@ Canvas::Canvas(QWidget *parent) {
 void Canvas::paintEvent(QPaintEvent *event) {
     Q_UNUSED(event);
 
+    QPainter localPainter(this);
+    painter = &localPainter;
+
     const float _h = static_cast<float>(this->height());
     const float _w = _h;
     const float _d = qMin(_w, _h) + 100;
@@ -129,39 +133,38 @@ void Canvas::paintEvent(QPaintEvent *event) {
     radius = _d / 2.0f;
     center = QPointF(_w / 2.0f, _h / 2.0f);
 
-    QPainter painter(this);
-    painter.setRenderHints(QPainter::Antialiasing, true);
+    painter->setRenderHints(QPainter::Antialiasing, true);
 
 
-    draw_circle(_d, painter);
-    draw_speed(start_angle, painter);
-    show_needle_speed(painter);
-    show_text_speed(painter);
-    show_temperature(painter);
-    show_battery(painter);
+    draw_circle(_d);
+    draw_speed(start_angle);
+    show_needle_speed();
+    show_text_speed();
+    show_temperature();
+    show_battery();
 }
 
-void Canvas::draw_circle(const float _d, QPainter &painter) {
+void Canvas::draw_circle(const float _d) {
     arc_center = QPointF(center.x() + a_offset_width, center.y() + a_offset_top);
     QRectF arcRect((center.x() - radius) + a_offset_width,
                    (center.y() - radius) + a_offset_top,
                    _d, _d);
 
-    painter.setPen(pen_white);
-    painter.drawArc(arcRect,
-                    circle_start_angle * circle_multiplayer,
-                    (circle_end_angle - circle_start_angle) * circle_multiplayer);
+    painter->setPen(pen_white);
+    painter->drawArc(arcRect,
+                     circle_start_angle * circle_multiplayer,
+                     (circle_end_angle - circle_start_angle) * circle_multiplayer);
 }
 
-void Canvas::draw_speed(int &start_angle, QPainter &painter) {
-    painter.setPen(pen_white);
+void Canvas::draw_speed(int &start_angle) {
+    painter->setPen(pen_white);
 
     const int segment = max_speed / text_step;
     start_angle = circle_start_angle + line_offset_angle;
     end_angle = circle_end_angle - line_offset_angle;
 
     const QFont font("Arial", text_font_size, QFont::Bold);
-    painter.setFont(font);
+    painter->setFont(font);
 
     for (int i = 0; i <= segment; ++i) {
         const float angle_deg = start_angle + (static_cast<float>(i) / static_cast<float>(segment)) *
@@ -182,7 +185,7 @@ void Canvas::draw_speed(int &start_angle, QPainter &painter) {
 
         if (i % 4 == 0) {
             QPointF vec = p2 - arc_center;
-            QFontMetrics fm(painter.font());
+            QFontMetrics fm(painter->font());
             QRect textRect = fm.boundingRect(QString::number(max_speed));
 
             QPointF text_pos = p2 - (vec / std::hypot(vec.x(), vec.y())) * (
@@ -191,22 +194,22 @@ void Canvas::draw_speed(int &start_angle, QPainter &painter) {
             text_pos.ry() += textRect.height() / 2.0f;
 
             const int speed = -(((i * speed_step_substraction) / 4) - max_speed);
-            painter.drawText(text_pos, QString::number(speed));
-            painter.setPen(pen_red);
+            painter->drawText(text_pos, QString::number(speed));
+            painter->setPen(pen_red);
         } else {
-            painter.setPen(pen_white);
+            painter->setPen(pen_white);
         }
 
-        painter.drawLine(p1, p2);
+        painter->drawLine(p1, p2);
     }
 }
 
-void Canvas::show_needle_speed(QPainter &painter) {
+void Canvas::show_needle_speed() {
     const double current_angle = current_angle_deg;
 
     // Draw needle base
-    painter.setBrush(Qt::white);
-    painter.setPen(pen_white);
+    painter->setBrush(Qt::white);
+    painter->setPen(pen_white);
 
     QRectF innerCircleRect(
         arc_center.x() - arrow_circle_outline_radius / 2.0f,
@@ -214,12 +217,12 @@ void Canvas::show_needle_speed(QPainter &painter) {
         arrow_circle_outline_radius,
         arrow_circle_outline_radius
     );
-    painter.drawArc(innerCircleRect, 0, full_circle * circle_multiplayer);
-    painter.drawEllipse(innerCircleRect);
+    painter->drawArc(innerCircleRect, 0, full_circle * circle_multiplayer);
+    painter->drawEllipse(innerCircleRect);
 
     // Draw center needle circle
-    painter.setPen(pen_red);
-    painter.setBrush(Qt::red);
+    painter->setPen(pen_red);
+    painter->setBrush(Qt::red);
 
     QRectF needleCircleRect(
         arc_center.x() - arrow_circle_outline_radius / 4.0f,
@@ -227,32 +230,32 @@ void Canvas::show_needle_speed(QPainter &painter) {
         arrow_circle_outline_radius - 20.0f,
         arrow_circle_outline_radius - 20.0f
     );
-    painter.drawArc(needleCircleRect, 0, full_circle * circle_multiplayer);
-    painter.drawEllipse(needleCircleRect);
+    painter->drawArc(needleCircleRect, 0, full_circle * circle_multiplayer);
+    painter->drawEllipse(needleCircleRect);
 
     // Draw needle pointer
     const QPointF needle_center = arc_center;
     const float needle_length = radius - line_gap - needle_offset;
 
-    QPointF needle_tip = needle_center + QPointF(needle_length * std::cos(current_angle),
-                                                 -needle_length * std::sin(current_angle));
+    const QPointF needle_tip = needle_center + QPointF(needle_length * std::cos(current_angle),
+                                                       -needle_length * std::sin(current_angle));
 
-    QPointF needle_left = needle_center + QPointF(needle_width * std::cos(current_angle + M_PI_2),
-                                                  -needle_width * std::sin(current_angle + M_PI_2));
-    QPointF needle_right = needle_center + QPointF(needle_width * std::cos(current_angle - M_PI_2),
-                                                   -needle_width * std::sin(current_angle - M_PI_2));
+    const QPointF needle_left = needle_center + QPointF(needle_width * std::cos(current_angle + M_PI_2),
+                                                        -needle_width * std::sin(current_angle + M_PI_2));
+    const QPointF needle_right = needle_center + QPointF(needle_width * std::cos(current_angle - M_PI_2),
+                                                         -needle_width * std::sin(current_angle - M_PI_2));
 
     QPolygonF needle;
     needle << needle_tip << needle_left << needle_right;
-    painter.drawPolygon(needle);
+    painter->drawPolygon(needle);
 
-    painter.setBrush(Qt::NoBrush);
+    painter->setBrush(Qt::NoBrush);
 }
 
-void Canvas::show_text_speed(QPainter &painter) {
+void Canvas::show_text_speed() {
     const QFont font("Arial", text_font_size, QFont::Bold);
-    painter.setPen(pen_white);
-    painter.setFont(font);
+    painter->setPen(pen_white);
+    painter->setFont(font);
 
     const QRectF icon_rect(
         arc_center.x() - speed_icon_size / 2.0, // center horizontally
@@ -268,8 +271,8 @@ void Canvas::show_text_speed(QPainter &painter) {
         speed_text_size_h
     );
 
-    painter.drawText(icon_rect, Qt::AlignCenter, speed_icon);
-    painter.drawText(text_rect, Qt::AlignCenter, QString::number(speed_from_angle()) + QString(" km/h"));
+    painter->drawText(icon_rect, Qt::AlignCenter, speed_icon);
+    painter->drawText(text_rect, Qt::AlignCenter, QString::number(speed_from_angle()) + QString(" km/h"));
 }
 
 void Canvas::set_speed(int speed) const {
@@ -310,16 +313,16 @@ int Canvas::speed_from_angle() {
     return speed;
 }
 
-void Canvas::show_temperature(QPainter &painter) {
+void Canvas::show_temperature() {
     const QFont font("Arial", temperature_icon_font_size);
-    painter.setFont(font);
+    painter->setFont(font);
 
     if (current_temperature < 5) {
-        painter.setPen(pen_white);
+        painter->setPen(pen_white);
     } else if (current_temperature < 40) {
-        painter.setPen(pen_blue);
+        painter->setPen(pen_blue);
     } else {
-        painter.setPen(pen_red);
+        painter->setPen(pen_red);
     }
 
     const QRectF icon_rect(
@@ -329,12 +332,12 @@ void Canvas::show_temperature(QPainter &painter) {
         temperature_icon_height
     );
 
-    painter.drawText(icon_rect, Qt::AlignCenter, temperature_icon);
+    painter->drawText(icon_rect, Qt::AlignCenter, temperature_icon);
 
     const QFont txt_font("Arial", temperature_text_font_size);
 
-    painter.setPen(pen_white);
-    painter.setFont(txt_font);
+    painter->setPen(pen_white);
+    painter->setFont(txt_font);
 
     const QRectF text_rect(
         arc_center.x() + temperature_icon_width * (temperature_icon_width_offset),
@@ -343,23 +346,23 @@ void Canvas::show_temperature(QPainter &painter) {
         temperature_icon_height
     );
 
-    painter.drawText(text_rect, Qt::AlignCenter, QString::number(current_temperature) + QString("°C"));
+    painter->drawText(text_rect, Qt::AlignCenter, QString::number(current_temperature) + QString("°C"));
 }
 
-void Canvas::show_battery(QPainter &painter) {
+void Canvas::show_battery() {
     const QFont font("Arial", 80);
     QPen current_pen;
-    painter.setFont(font);
+    painter->setFont(font);
 
     if (current_battery < 25) {
         current_pen = pen_red;
-        painter.setBrush(Qt::red);
+        painter->setBrush(Qt::red);
     } else if (current_battery < 50) {
         current_pen = pen_yellow;
-        painter.setBrush(Qt::yellow);
+        painter->setBrush(Qt::yellow);
     } else {
         current_pen = pen_green;
-        painter.setBrush(Qt::green);
+        painter->setBrush(Qt::green);
     }
 
     const QRectF icon_rect(
@@ -380,16 +383,16 @@ void Canvas::show_battery(QPainter &painter) {
     );
 
     const QRectF icon_fill_rect(fill_rect);
-    painter.setPen(Qt::NoPen);
-    painter.drawRect(icon_fill_rect);
-    painter.setBrush(Qt::NoBrush);
+    painter->setPen(Qt::NoPen);
+    painter->drawRect(icon_fill_rect);
+    painter->setBrush(Qt::NoBrush);
 
-    painter.setPen(current_pen);
-    painter.drawText(icon_rect, Qt::AlignCenter, battery_icon);
+    painter->setPen(current_pen);
+    painter->drawText(icon_rect, Qt::AlignCenter, battery_icon);
     const QFont txt_font("Arial", temperature_text_font_size);
 
-    painter.setPen(pen_white);
-    painter.setFont(txt_font);
+    painter->setPen(pen_white);
+    painter->setFont(txt_font);
 
     const QRectF text_rect(
         arc_center.x() + battery_icon_width * battery_icon_width_offset,
@@ -398,5 +401,5 @@ void Canvas::show_battery(QPainter &painter) {
         battery_icon_height
     );
 
-    painter.drawText(text_rect, Qt::AlignCenter, QString::number(current_battery_fill) + QString("%"));
+    painter->drawText(text_rect, Qt::AlignCenter, QString::number(current_battery_fill) + QString("%"));
 }
