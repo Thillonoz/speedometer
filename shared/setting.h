@@ -1,60 +1,61 @@
 #ifndef SETTING_H
 #define SETTING_H
 
-#define SIGNAL_LIST                          \
-    {{8, 0, 0, 240}, "speed"},               \
-        {{7, 0, -60, 60}, "temperature"},    \
-        {{7, 15, 0, 100}, "battery"},        \
-        {{1, 22, 0, 1}, "left_turn_signal"}, \
-        {{1, 22, 0, 1}, "right_turn_signal"}
-
 #define BAUDRATE 1048576
 #define BUFLEN 3
 
 #ifdef __cplusplus
 
+#define SIGNAL_LIST {                    \
+    {{8, 0, 0, 240}, "speed"},           \
+    {{7, 0, -60, 60}, "temperature"},    \
+    {{7, 15, 0, 100}, "battery"},        \
+    {{1, 22, 0, 1}, "left_turn_signal"}, \
+    {{1, 22, 0, 1}, "right_turn_signal"}}
+
 #include <map>
-#include <climits>
 #include <string>
 
 namespace Setting
 {
-    struct SignalMeta
-    {
-        int scale;
-        int startBit;
-        int min;
-        int max;
-    };
-
-    struct SignalInfo
-    {
-        SignalMeta meta;
-        const char *name;
-    };
-
-    constexpr SignalInfo SignalList[] = {
-        SIGNAL_LIST};
-
-    constexpr size_t SignalCount = sizeof(SignalList) / sizeof(SignalList[0]);
     constexpr int BaudRate = BAUDRATE;
     constexpr int BufferLength = BUFLEN;
 
-    inline const SignalInfo *getSignalInfo(const std::string &name)
+    class Signal
     {
-        const SignalInfo *result = nullptr;
-        for (const auto &signal : SignalList)
+        struct value_t
         {
-            if (signal.name == name)
+            int length, start, min, max;
+        };
+        using key_t = std::string;
+
+        std::map<key_t, value_t> signal;
+
+        Signal()
+        {
+            const std::tuple<value_t, key_t> list[] = SIGNAL_LIST;
+#undef SIGNAL_LIST
+
+            for (const auto &elem : list)
             {
-                result = &signal;
-                break;
+                signal.insert({std::get<key_t>(elem), std::get<value_t>(elem)});
             }
         }
-        return result;
-    }
+
+    public:
+        const value_t &operator[](const key_t &key)
+        {
+            return signal[key];
+        }
+
+        static Signal &handle(void)
+        {
+            static Signal instance;
+            return instance;
+        }
+    };
 }
 
-#endif
+#endif // __cplusplus
 
 #endif // SETTING_H
