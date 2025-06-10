@@ -62,7 +62,7 @@ static constexpr float battery_icon_height = 100.0f;
 static constexpr float battery_icon_width = 40.0f;
 static constexpr float battery_icon_width_offset = 9.0f;
 static constexpr float battery_icon_top_offset = 30.4f;
-static constexpr float battery_text_top_offset = 65.4f;
+static constexpr float battery_text_top_offset = 70.4f;
 static constexpr float fill_margin_ratio = 0.90f;
 
 static QPointF center;
@@ -350,7 +350,8 @@ void Canvas::show_temperature() {
 }
 
 void Canvas::show_battery() {
-    const QFont font("Arial", 80);
+    const QFont font("Material Icons", 90);
+
     QPen current_pen;
     painter->setFont(font);
 

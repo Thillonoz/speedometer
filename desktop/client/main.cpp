@@ -9,7 +9,7 @@ int main(int argc, char **argv) {
 
     w->set_speed(225);
     w->set_temperature(35);
-    w->set_battery(62);
+    w->set_battery(100);
     w->show();
 
     return app.exec();
