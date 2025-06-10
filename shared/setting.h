@@ -6,21 +6,20 @@
 
 #ifdef __cplusplus
 
-#define SIGNAL_LIST {                    \
-    {{8, 0, 0, 240}, "speed"},           \
-    {{7, 0, -60, 60}, "temperature"},    \
-    {{7, 15, 0, 100}, "battery"},        \
-    {{1, 22, 0, 1}, "left_turn_signal"}, \
-    {{1, 22, 0, 1}, "right_turn_signal"}}
+#define SIGNAL_LIST {                     \
+    {{8, 0, 0, 240}, "speed"},            \
+    {{7, 0, -60, 60}, "temperature"},     \
+    {{7, 15, 0, 100}, "battery"},         \
+    {{1, 22, 0, 1}, "left_turn_signal"},  \
+    {{1, 22, 0, 1}, "right_turn_signal"}, \
+}
 
 #include <map>
+#include <tuple>
 #include <string>
 
 namespace Setting
 {
-    constexpr int BaudRate = BAUDRATE;
-    constexpr int BufferLength = BUFLEN;
-
     class Signal
     {
         struct value_t
@@ -54,6 +53,14 @@ namespace Setting
             return instance;
         }
     };
+
+    constexpr int INTERVAL{40};
+
+    namespace TCPIP
+    {
+        constexpr int PORT{12345};
+        constexpr char IP[]{"127.0.0.1"};
+    }
 }
 
 #endif // __cplusplus
