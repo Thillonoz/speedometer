@@ -4,35 +4,31 @@
 #include <cstdint>
 #include <mutex>
 #include <atomic>
-#include <array>
-#include <string>
 #include "setting.h"
 
 class COMService
 {
-public:
-    virtual ~COMService() = default;
+    Setting::Signal &signal(Setting::Signal::handle());
 
-    // Start thread that receives and stores buffer
-    virtual void run() = 0;
+    void extract(uint32_t start, uint32_t lenght, uint32_t &value);
 
-    // Get extracted signals
-    virtual uint32_t getSpeed() const = 0;
-    virtual int32_t getTemperature() const = 0;
-    virtual uint32_t getBatteryLevel() const = 0;
-    virtual bool getLeftSignal(void) const = 0;
-    virtual bool getRightSignal(void) const = 0;
-
-    // Get communication status
-    bool getStatus() const;
+    void extract(uint32_t start, uint32_t length, int32_t &value);
 
 protected:
+    std::mutex mtx;
+    uint8_t buffer[BUFLEN];
     std::atomic<bool> status{false};
-    mutable std::mutex mtx;
-    std::array<uint8_t, Setting::BufferLength> buffer{};
 
-    uint32_t extractBits(int startBit, int bitLength) const;
-    uint32_t extractSignal(const std::string &name) const;
+    virtual void run(void) = 0;
+
+public:
+    bool getStatus(void) { return status; };
+    uint32_t getBatteryLevel(void);
+    int32_t getTemperature(void);
+    bool getRightLight(void);
+    bool getLeftLight(void);
+    uint32_t getSpeed(void);
+    virtual ~COMService() = default;
 };
 
 #endif // COMSERVICE_H
