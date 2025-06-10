@@ -1,18 +1,29 @@
 #include "canvas.h"
+#include "setting.h"
 
 #include <QtMath>
 #include <QTimer>
 #include <QFont>
 
+// Include Settngs
+static Setting::Signal &SETTINGS{Setting::Signal::handle()};
+
+// Window Size Settings
+static constexpr int offset = 40;
+
 static constexpr int a_offset_width = 80;
 static constexpr int a_offset_top = 70;
 static constexpr int line_offset_angle = 2;
 
+static float _h, _w, _d;
+
+// Circle Parameter
 static constexpr int circle_multiplayer = 16;
 static constexpr int circle_start_angle = -40;
 static constexpr int circle_end_angle = 220;
 static constexpr int full_circle = 360;
 
+// Painter Parameter
 static constexpr float pen_width = 6.0f;
 static constexpr float line_length = 20.0f;
 static constexpr float medium_line_length = 10.0f;
@@ -21,28 +32,19 @@ static constexpr float line_gap = 10.0f;
 
 static constexpr float arrow_circle_outline_radius = 40.0f;
 
-static constexpr int max_speed = 240;
-static int current_speed = 0;
-static constexpr int speed_step_substraction = 20;
-
-static constexpr float needle_offset = 40.0f;
-static constexpr float needle_width = 10.0f;
-
-static constexpr int text_font_size = 24;
-static constexpr float text_offset = 15.0f;
-static constexpr int text_step = 5;
-
-static constexpr int interval = 16U; // ~60fps
-
 static const QPen pen_white(Qt::white, pen_width);
 static const QPen pen_blue(Qt::blue, pen_width);
 static const QPen pen_yellow(Qt::yellow, pen_width);
 static const QPen pen_green(Qt::green, pen_width);
 static const QPen pen_red(Qt::red, pen_width);
 
-static constexpr QChar speed_icon = QChar(0xe9e4);
-static constexpr QChar temperature_icon = QChar(0xe1ff);
-static constexpr QChar battery_icon = QChar(0xebdc);
+static constexpr QChar speed_icon(0xe9e4);
+static constexpr QChar temperature_icon(0xe1ff);
+static constexpr QChar battery_icon(0xebdc);
+
+// Speed Settings
+static int max_speed = SETTINGS["speed"].max;
+static int min_speed = SETTINGS["speed"].min;
 
 static constexpr float speed_icon_top_offset = 0.33f;
 static constexpr float speed_icon_size = 40.0f;
@@ -50,6 +52,22 @@ static constexpr float speed_text_size_w = 200.0f;
 static constexpr float speed_text_size_h = 40.0f;
 static constexpr float speed_text_offset = 0.07f;
 
+static constexpr int speed_step_substraction = 20;
+static int current_speed = 0;
+
+// Needle Settings
+static constexpr float needle_offset = 40.0f;
+static constexpr float needle_width = 10.0f;
+
+// Txt Settings
+static constexpr int text_font_size = 24;
+static constexpr float text_offset = 15.0f;
+static constexpr int text_step = 5;
+
+// Animation speed
+static constexpr int interval = Setting::INTERVAL;
+
+// Temperature Settings
 static constexpr float temperature_icon_width = 40.0f;
 static constexpr float temperature_icon_height = 85.0f;
 static constexpr float temperature_icon_top_offset = 0.4f;
@@ -58,6 +76,12 @@ static constexpr float temperature_icon_font_size = 60.0f;
 static constexpr float temperature_text_font_size = 12.0f;
 static constexpr float temperature_text_top_offset = 0.12f;
 
+static int max_temperature = SETTINGS["temperature"].max;
+static int min_temperature = SETTINGS["temperature"].min;
+
+static int current_temperature = 10;
+
+// Battery Settings
 static constexpr float battery_icon_height = 100.0f;
 static constexpr float battery_icon_width = 40.0f;
 static constexpr float battery_icon_width_offset = 9.0f;
@@ -65,6 +89,14 @@ static constexpr float battery_icon_top_offset = 30.4f;
 static constexpr float battery_text_top_offset = 70.4f;
 static constexpr float fill_margin_ratio = 0.90f;
 
+static float current_battery_fill = 100;
+static float target_battery_fill = 100;
+static int current_battery = 100;
+
+static int max_battery = SETTINGS["battery"].max;
+static int min_battery = SETTINGS["battery"].min;
+
+// Helper angles
 static QPointF center;
 static QPointF arc_center;
 
@@ -75,26 +107,24 @@ static float radius;
 static float current_angle_deg = qDegreesToRadians(static_cast<float>(circle_end_angle + line_offset_angle));
 static float target_angle_deg = current_angle_deg;
 
-static float current_battery_fill = 100;
-static float target_battery_fill = 100;
-static int current_battery = 100;
-
-static int current_temperature = 10;
-
 Canvas::Canvas(QWidget *parent) {
+    // Setup Window Size
     setParent(parent);
     setFixedSize(parent->width() - offset, parent->height() - offset);
 
-    painter = nullptr;
+    painter = nullptr; // Init painter
 
-    current_speed = max_speed;
+    current_speed = max_speed; // Set current speed to max speed
 
+    // Create needle QTimer event
     needle_timer = new QTimer(this);
     needle_timer->setInterval(interval);
 
+    // Create battery QTimer event
     battery_timer = new QTimer(this);
     battery_timer->setInterval(interval);
 
+    // Needle animation
     connect(needle_timer, &QTimer::timeout, this, [this]() {
         const float step = qDegreesToRadians(1.5f);
 
@@ -107,6 +137,7 @@ Canvas::Canvas(QWidget *parent) {
         update();
     });
 
+    // Battery animation
     connect(battery_timer, &QTimer::timeout, this, [this]() {
         const int step = 1;
 
@@ -123,20 +154,21 @@ Canvas::Canvas(QWidget *parent) {
 void Canvas::paintEvent(QPaintEvent *event) {
     Q_UNUSED(event);
 
+    // Setup Painter
     QPainter localPainter(this);
     painter = &localPainter;
-
-    const float _h = static_cast<float>(this->height());
-    const float _w = _h;
-    const float _d = qMin(_w, _h) + 100;
-
-    radius = _d / 2.0f;
-    center = QPointF(_w / 2.0f, _h / 2.0f);
-
     painter->setRenderHints(QPainter::Antialiasing, true);
 
+    // Calculate height, width and diameter
+    _h = static_cast<float>(this->height());
+    _w = _h;
+    _d = qMin(_w, _h) + 100;
 
-    draw_circle(_d);
+    radius = _d / 2.0f;
+    center = QPointF(_w / 2.0f, _h / 2.0f); // Get the center of the CANVAS screen
+
+    // Call all draw functions
+    draw_circle();
     draw_speed(start_angle);
     show_needle_speed();
     show_text_speed();
@@ -144,7 +176,7 @@ void Canvas::paintEvent(QPaintEvent *event) {
     show_battery();
 }
 
-void Canvas::draw_circle(const float _d) {
+void Canvas::draw_circle() const {
     arc_center = QPointF(center.x() + a_offset_width, center.y() + a_offset_top);
     QRectF arcRect((center.x() - radius) + a_offset_width,
                    (center.y() - radius) + a_offset_top,
@@ -156,7 +188,7 @@ void Canvas::draw_circle(const float _d) {
                      (circle_end_angle - circle_start_angle) * circle_multiplayer);
 }
 
-void Canvas::draw_speed(int &start_angle) {
+void Canvas::draw_speed(int &start_angle) const {
     painter->setPen(pen_white);
 
     const int segment = max_speed / text_step;
@@ -204,7 +236,7 @@ void Canvas::draw_speed(int &start_angle) {
     }
 }
 
-void Canvas::show_needle_speed() {
+void Canvas::show_needle_speed() const {
     const double current_angle = current_angle_deg;
 
     // Draw needle base
@@ -252,11 +284,12 @@ void Canvas::show_needle_speed() {
     painter->setBrush(Qt::NoBrush);
 }
 
-void Canvas::show_text_speed() {
+void Canvas::show_text_speed() const {
     const QFont font("Arial", text_font_size, QFont::Bold);
     painter->setPen(pen_white);
     painter->setFont(font);
 
+    // draw speed icon
     const QRectF icon_rect(
         arc_center.x() - speed_icon_size / 2.0, // center horizontally
         arc_center.y() + arrow_circle_outline_radius / speed_icon_top_offset,
@@ -264,6 +297,7 @@ void Canvas::show_text_speed() {
         speed_icon_size
     );
 
+    // draw speed txt
     const QRectF text_rect(
         arc_center.x() - speed_text_size_w / 2.0, // center horizontally
         arc_center.y() + arrow_circle_outline_radius / (speed_icon_top_offset - speed_text_offset),
@@ -274,29 +308,6 @@ void Canvas::show_text_speed() {
     painter->drawText(icon_rect, Qt::AlignCenter, speed_icon);
     painter->drawText(text_rect, Qt::AlignCenter, QString::number(speed_from_angle()) + QString(" km/h"));
 }
-
-void Canvas::set_speed(int speed) const {
-    speed = qBound(0, speed, max_speed);
-
-    const float angle_range = (circle_end_angle - circle_start_angle) - 2 * line_offset_angle;
-    const float percentage = static_cast<float>(speed) / max_speed;
-
-    const float angle_deg = circle_end_angle - line_offset_angle - (percentage * angle_range);
-    target_angle_deg = qDegreesToRadians(angle_deg);
-
-    needle_timer->start();
-}
-
-void Canvas::set_temperature(int temperature) const {
-    current_temperature = temperature;
-}
-
-void Canvas::set_battery(int battery_percent) const {
-    current_battery = qBound(0, battery_percent, 100);
-    target_battery_fill = static_cast<float>(current_battery);
-    battery_timer->start();
-}
-
 
 int Canvas::speed_from_angle() {
     const float angle_range = (circle_end_angle - circle_start_angle) - 2 * line_offset_angle;
@@ -314,9 +325,10 @@ int Canvas::speed_from_angle() {
 }
 
 void Canvas::show_temperature() {
-    const QFont font("Arial", temperature_icon_font_size);
+    const QFont font("Material Icons", temperature_icon_font_size);
     painter->setFont(font);
 
+    // set pen color depending on temperature
     if (current_temperature < 5) {
         painter->setPen(pen_white);
     } else if (current_temperature < 40) {
@@ -325,6 +337,7 @@ void Canvas::show_temperature() {
         painter->setPen(pen_red);
     }
 
+    // draw temperature icon
     const QRectF icon_rect(
         arc_center.x() + temperature_icon_width * temperature_icon_width_offset,
         arc_center.y() + arrow_circle_outline_radius / temperature_icon_top_offset,
@@ -333,7 +346,6 @@ void Canvas::show_temperature() {
     );
 
     painter->drawText(icon_rect, Qt::AlignCenter, temperature_icon);
-
     const QFont txt_font("Arial", temperature_text_font_size);
 
     painter->setPen(pen_white);
@@ -403,4 +415,28 @@ void Canvas::show_battery() {
     );
 
     painter->drawText(text_rect, Qt::AlignCenter, QString::number(current_battery_fill) + QString("%"));
+}
+
+// Set parameters:
+
+void Canvas::set_speed(int speed) const {
+    speed = qBound(min_speed, speed, max_speed);
+
+    const float angle_range = (circle_end_angle - circle_start_angle) - 2 * line_offset_angle;
+    const float percentage = static_cast<float>(speed) / max_speed;
+
+    const float angle_deg = circle_end_angle - line_offset_angle - (percentage * angle_range);
+    target_angle_deg = qDegreesToRadians(angle_deg);
+
+    needle_timer->start();
+}
+
+void Canvas::set_temperature(const int temperature) const {
+    current_temperature = qBound(min_temperature, temperature, max_temperature);
+}
+
+void Canvas::set_battery(const int battery_percent) const {
+    current_battery = qBound(min_battery, battery_percent, max_battery);
+    target_battery_fill = static_cast<float>(current_battery);
+    battery_timer->start();
 }
