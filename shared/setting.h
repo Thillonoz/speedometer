@@ -8,10 +8,10 @@
 
 #define SIGNAL_LIST {                     \
     {{8, 0, 0, 240}, "speed"},            \
-    {{7, 0, -60, 60}, "temperature"},     \
+    {{7, 8, -60, 60}, "temperature"},     \
     {{7, 15, 0, 100}, "battery"},         \
     {{1, 22, 0, 1}, "left_turn_signal"},  \
-    {{1, 22, 0, 1}, "right_turn_signal"}, \
+    {{1, 23, 0, 1}, "right_turn_signal"}, \
 }
 
 #include <map>
