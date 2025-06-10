@@ -5,7 +5,8 @@
 
 #include "canvas.h"
 
-class Window final : public QDialog {
+class Window final : public QDialog
+{
     Canvas *canvas;
 
 public:
@@ -18,6 +19,8 @@ public:
     void set_temperature(const int temperature) const;
 
     void set_battery(const int battery_percent) const;
+
+    void set_blinker(const int position) const;
 };
 
 #endif

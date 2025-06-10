@@ -7,6 +7,7 @@
 class Canvas : public QWidget {
     QTimer *needle_timer{};
     QTimer *battery_timer{};
+    QTimer *blinker_timer{};
     QPainter *painter{};
 
 public:
@@ -36,7 +37,10 @@ public:
     /**
      * @brief A Helper Function to calculate the angle of the needle from the current speed
      */
+
     [[nodiscard]] static int speed_from_angle();
+
+    void set_blinker(int position) const;
 
 protected:
     /**
@@ -70,6 +74,10 @@ protected:
     void show_battery();
 
     void paintEvent(QPaintEvent *event) override;
+
+    static void draw_battery(int _battery_level, QPainter &painter);
+
+    void blinker();
 };
 
 #endif

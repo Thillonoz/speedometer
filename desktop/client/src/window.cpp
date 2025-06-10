@@ -4,9 +4,10 @@
 
 #include <QPalette>
 
-Window::Window(QWidget *parent): QDialog(parent) {
-    setWindowTitle("Client"); // it shall take it from the settings
-    setFixedSize(800, 600); // it shall take it from the settings
+Window::Window(QWidget *parent) : QDialog(parent)
+{
+    setWindowTitle("Client");
+    setFixedSize(800, 600);
     setWindowFlags(Qt::WindowStaysOnTopHint);
 
     canvas = new Canvas(this);
@@ -14,8 +15,8 @@ Window::Window(QWidget *parent): QDialog(parent) {
     set_bg_color();
 }
 
-
-void Window::set_bg_color() {
+void Window::set_bg_color()
+{
     QPalette palette = QPalette();
     palette.setColor(QPalette::Window, QColor(122, 29, 191));
 
@@ -23,14 +24,22 @@ void Window::set_bg_color() {
     setPalette(palette);
 }
 
-void Window::set_speed(const int speed) const {
+void Window::set_speed(const int speed) const
+{
     canvas->set_speed(speed);
 }
 
-void Window::set_temperature(const int temperature) const {
+void Window::set_temperature(const int temperature) const
+{
     canvas->set_temperature(temperature);
 }
 
-void Window::set_battery(const int battery_percent) const {
+void Window::set_battery(const int battery_percent) const
+{
     canvas->set_battery(battery_percent);
+}
+
+void Window::set_blinker(const int position) const
+{
+    canvas->set_blinker(position);
 }
