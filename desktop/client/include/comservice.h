@@ -8,9 +8,9 @@
 
 class COMService
 {
-    Setting::Signal &signal(Setting::Signal::handle());
+    Setting::Signal &signal{Setting::Signal::handle()};
 
-    void extract(uint32_t start, uint32_t lenght, uint32_t &value);
+    void extract(uint32_t start, uint32_t length, uint32_t &value);
 
     void extract(uint32_t start, uint32_t length, int32_t &value);
 
@@ -23,11 +23,17 @@ protected:
 
 public:
     bool getStatus(void) { return status; };
-    uint32_t getBatteryLevel(void);
-    int32_t getTemperature(void);
-    bool getRightLight(void);
-    bool getLeftLight(void);
+
     uint32_t getSpeed(void);
+
+    uint32_t getBatteryLevel(void);
+
+    int32_t getTemperature(void);
+
+    bool getLeftLight(void);
+
+    bool getRightLight(void);
+
     virtual ~COMService() = default;
 };
 
