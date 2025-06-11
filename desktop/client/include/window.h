@@ -4,12 +4,15 @@
 #include <QDialog>
 
 #include "canvas.h"
+#include "comservice.h"
 
-class Window final : public QDialog {
+class Window final : public QDialog
+{
     Canvas *canvas;
+    COMService &comservice;
 
 public:
-    explicit Window(QWidget *parent = nullptr);
+    Window(QWidget *parent, COMService &comservice);
 
     /**
      * @brief Function to set the background color of the main window
