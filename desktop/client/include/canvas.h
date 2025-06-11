@@ -37,10 +37,21 @@ public:
     /**
      * @brief A Helper Function to calculate the angle of the needle from the current speed
      */
-
     [[nodiscard]] static int speed_from_angle();
 
-    void set_blinker(int position) const;
+    /**
+     * @brief Function to turn on [left, right, warning] blinkers or off
+     *
+     * @param blinker_state The state of the blinker, ether on [left, right, warning] or off
+     */
+    void set_blinker(int blinker_state) const;
+
+    /**
+     * @brief Function to display the disconnect warning
+     *
+     * @param status The status of connection its ether true [connected] or false [not connected]
+     */
+    void is_connected(bool status) const;
 
 protected:
     /**
@@ -73,11 +84,17 @@ protected:
      */
     void show_battery();
 
-    void paintEvent(QPaintEvent *event) override;
-
-    static void draw_battery(int _battery_level, QPainter &painter);
-
+    /**
+     * @brief Function to draw the blinkers
+     */
     void blinker();
+
+    /**
+     * @brief Function to draw the disconnect warning
+     */
+    void show_disconnect_warning() const;
+
+    void paintEvent(QPaintEvent *event) override;
 };
 
 #endif
