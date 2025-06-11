@@ -26,11 +26,6 @@ void COMService::extract(uint32_t start, uint32_t length, uint32_t &value)
                 index++;
             }
         }
-
-        if ((value & (1 << (length - 1))) != 0)
-        {
-            value |= (~0 << length);
-        }
     }
 }
 
