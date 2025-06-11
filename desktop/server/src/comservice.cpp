@@ -5,9 +5,8 @@ void COMService::insert(const uint32_t _start, const uint32_t _length, uint32_t 
 {
   if (_length > 0)
   {
-    if (_start + _length < (BUFLEN * CHAR_BIT))
+    if (_start + _length <= (BUFLEN * CHAR_BIT))
     {
-      status = false;
       mtx.lock();
       int cursor = _start % CHAR_BIT;
       int index = _start / CHAR_BIT;
@@ -33,7 +32,6 @@ void COMService::insert(const uint32_t _start, const uint32_t _length, uint32_t 
         }
       }
       mtx.unlock();
-      status = true;
     }
   }
 };

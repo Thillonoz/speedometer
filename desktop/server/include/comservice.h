@@ -12,8 +12,6 @@ public:
     Setting::Signal &SIGNALS{Setting::Signal::handle()};
     void insert(const uint32_t _start, const uint32_t _length, uint32_t _value);
     
-    void extract(const uint32_t _start, const uint32_t _length, uint32_t &_var);
-    
 protected:
     std::mutex mtx;
     uint8_t buffer[BUFLEN]{};
