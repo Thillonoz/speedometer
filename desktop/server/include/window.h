@@ -1,6 +1,7 @@
 #ifndef WINDOW_H
 #define WINDOW_H
 
+#include <QCloseEvent>
 #include <QDialog>
 #include <QFormLayout>
 #include <QString>
@@ -10,12 +11,18 @@
 #include <QLabel>
 #include <QSlider>
 
-class Window : public QDialog {
+#include "comservice.h"
+
+class Window : public QDialog
+{
   static constexpr const char *SPEED_SUFFIX{" Km/h"};
   static constexpr const char *TEMPERATURE_SUFFIX{" °C"};
   static constexpr const char *BATTERY_SUFFIX{" %"};
   static constexpr int SLIDER_WIDTH{500};
   static constexpr int SLIDER_LABEL_CHAR_SIZE{8};
+
+private:
+  COMService &COMHandle;
 
 private:
   QVBoxLayout mainLayout;
@@ -47,7 +54,10 @@ private:
   static int CALC_LABEL_WIDTH(int x) { return (8 * (x + 1)); };
 
 public:
-  Window();
+  Window(COMService &_COMHandle);
+
+protected:
+  void closeEvent(QCloseEvent *event) override;
 };
 
 #endif
