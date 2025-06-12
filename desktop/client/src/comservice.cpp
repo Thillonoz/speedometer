@@ -3,30 +3,28 @@
 
 void COMService::extract(uint32_t start, uint32_t length, uint32_t &value)
 {
+    mtx.lock();
     value = 0;
+    int cursor = start % CHAR_BIT;
+    int index = start / CHAR_BIT;
 
-    if ((length > 0) && (start + length <= (BUFLEN * CHAR_BIT)))
+    for (size_t i = 0; i < length; i++)
     {
-        int cursor = start % CHAR_BIT;
-        int index = start / CHAR_BIT;
+        uint8_t bit = (uint8_t)((this->buffer[index] >> cursor) & 1);
 
-        for (size_t i = 0; i < length; i++)
+        if (bit == 1)
         {
-            uint8_t bit = (uint8_t)((this->buffer[index] >> cursor) & 1);
+            value |= (1 << i);
+        }
 
-            if (bit == 1)
-            {
-                value |= (1 << i);
-            }
-
-            cursor++;
-            if (cursor == CHAR_BIT)
-            {
-                cursor = 0;
-                index++;
-            }
+        cursor++;
+        if (cursor == CHAR_BIT)
+        {
+            cursor = 0;
+            index++;
         }
     }
+    mtx.unlock();
 }
 
 void COMService::extract(uint32_t start, uint32_t length, int32_t &value)

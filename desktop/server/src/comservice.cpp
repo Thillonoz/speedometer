@@ -3,37 +3,31 @@
 
 void COMService::insert(const uint32_t _start, const uint32_t _length, uint32_t _value)
 {
-  if (_length > 0)
+  mtx.lock();
+  int cursor = _start % CHAR_BIT;
+  int index = _start / CHAR_BIT;
+
+  for (size_t i = 0; i < _length; i++)
   {
-    if (_start + _length <= (BUFLEN * CHAR_BIT))
+    uint8_t bit = (uint8_t)((_value >> i) & 1);
+
+    if (bit == 0)
     {
-      mtx.lock();
-      int cursor = _start % CHAR_BIT;
-      int index = _start / CHAR_BIT;
+      buffer[index] &= ~(1 << cursor);
+    }
+    else
+    {
+      buffer[index] |= (1 << cursor);
+    }
 
-      for (size_t i = 0; i < _length; i++)
-      {
-        uint8_t bit = (uint8_t)((_value >> i) & 1);
-
-        if (bit == 0)
-        {
-          buffer[index] &= ~(1 << cursor);
-        }
-        else
-        {
-          buffer[index] |= (1 << cursor);
-        }
-
-        cursor++;
-        if (cursor == CHAR_BIT)
-        {
-          cursor = 0;
-          index++;
-        }
-      }
-      mtx.unlock();
+    cursor++;
+    if (cursor == CHAR_BIT)
+    {
+      cursor = 0;
+      index++;
     }
   }
+  mtx.unlock();
 };
 
 void COMService::insertSpeed(uint32_t _value)
