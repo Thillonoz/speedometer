@@ -1,9 +1,7 @@
 #include "setting.h"
 #include "tcpservice.h"
 
-#include <cctype>
 #include <netdb.h>
-#include <cstring>
 #include <iostream>
 #include <arpa/inet.h>
 #include <sys/types.h>
