@@ -19,6 +19,12 @@ void TCPService::run(void)
   }
   else
   {
+    int opt = 1;
+    if (setsockopt(socketHandle, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0)
+    {
+      std::cout << "Socket options failed." << std::endl;
+    }
+
     sockaddr_in address;
     address.sin_family = AF_INET;
     address.sin_port = htons(Setting::TCPIP::PORT);
@@ -26,42 +32,45 @@ void TCPService::run(void)
 
     if (0 == bind(socketHandle, (sockaddr *)&address, sizeof(address)))
     {
-      if (0 == listen(socketHandle, 1))
+      while (!end)
       {
-        sockaddr_in client;
-        socklen_t clientLength = sizeof(client);
-
-        int connectionHandle = accept(socketHandle, (sockaddr *)&client, &clientLength);
-        if (connectionHandle >= 0)
+        if (0 == listen(socketHandle, 1))
         {
-          std::cout << "Connected to client." << std::endl;
-          status = true;
+          sockaddr_in client;
+          socklen_t clientLength = sizeof(client);
 
-          while (1)
+          int connectionHandle = accept(socketHandle, (sockaddr *)&client, &clientLength);
+          if (connectionHandle >= 0)
           {
-            mtx.lock();
-            if (BUFLEN != write(connectionHandle, buffer, BUFLEN))
-            {
-              std::cout << "Failed to write." << std::endl;
-              mtx.unlock();
-              break;
-            }
-            mtx.unlock();
-            usleep(Setting::INTERVAL * 1000);
-          }
+            std::cout << "Connected to client." << std::endl;
+            status = true;
 
-          shutdown(connectionHandle, SHUT_RDWR);
-          close(connectionHandle);
-          status = false;
+            while (1)
+            {
+              mtx.lock();
+              if (BUFLEN != write(connectionHandle, buffer, BUFLEN))
+              {
+                std::cout << "Failed to write." << std::endl;
+                mtx.unlock();
+                break;
+              }
+              mtx.unlock();
+              usleep(Setting::INTERVAL * 1000);
+            }
+
+            shutdown(connectionHandle, SHUT_RDWR);
+            close(connectionHandle);
+            status = false;
+          }
+          else
+          {
+            std::cout << "Connection failed." << std::endl;
+          }
         }
         else
         {
-          std::cout << "Connection failed." << std::endl;
+          std::cout << "PORT already used or failed." << std::endl;
         }
-      }
-      else
-      {
-        std::cout << "PORT already used or failed." << std::endl;
       }
     }
     else
