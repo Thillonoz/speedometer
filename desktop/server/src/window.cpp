@@ -1,5 +1,6 @@
 #include "window.h"
 #include "setting.h"
+#include <csignal>
 
 Window::Window(COMService &_COMHandle) : COMHandle{_COMHandle}
 {
@@ -189,4 +190,10 @@ void Window::onClickWarningIndicator(int _state)
   {
     ;
   }
+}
+
+void Window::closeEvent(QCloseEvent *event)
+{
+  std::raise(SIGINT);
+  event->accept();
 }

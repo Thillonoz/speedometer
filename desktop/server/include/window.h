@@ -1,6 +1,7 @@
 #ifndef WINDOW_H
 #define WINDOW_H
 
+#include <QCloseEvent>
 #include <QDialog>
 #include <QFormLayout>
 #include <QString>
@@ -54,6 +55,9 @@ private:
 
 public:
   Window(COMService &_COMHandle);
+
+protected:
+  void closeEvent(QCloseEvent *event) override;
 };
 
 #endif
