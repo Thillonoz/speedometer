@@ -1,8 +1,8 @@
 #include "window.h"
 
 #include "setting.h"
-
 #include <QPalette>
+#include <csignal>
 
 Window::Window(QWidget *parent, COMService &comservice)
     : QDialog(parent), comservice(comservice) // <-- initialize here
@@ -48,3 +48,10 @@ void Window::set_connection_status(const bool connection_status) const
 {
     canvas->is_connected(connection_status);
 };
+
+void Window::closeEvent(QCloseEvent *event)
+{
+    std::raise(SIGINT);
+
+    event->accept();
+}

@@ -3,6 +3,8 @@
 
 #include <QDialog>
 
+#include <QCloseEvent>
+
 #include "canvas.h"
 #include "comservice.h"
 
@@ -53,6 +55,8 @@ public:
      * @param connection_status The connection_status you want to set
      */
     void set_connection_status(const bool connection_status) const;
+
+  void closeEvent(QCloseEvent *event) override;
 };
 
 #endif
