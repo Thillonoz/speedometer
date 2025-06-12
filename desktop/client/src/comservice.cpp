@@ -5,7 +5,7 @@ void COMService::extract(uint32_t start, uint32_t length, uint32_t &value)
 {
     value = 0;
 
-    if ((length > 0) && (start + length < (BUFLEN * CHAR_BIT)))
+    if ((length > 0) && (start + length <= (BUFLEN * CHAR_BIT)))
     {
         int cursor = start % CHAR_BIT;
         int index = start / CHAR_BIT;

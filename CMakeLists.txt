@@ -49,6 +49,8 @@ add_executable(desktop_client
     desktop/client/main.cpp
     desktop/client/src/canvas.cpp
     desktop/client/src/window.cpp
+    desktop/client/src/comservice.cpp
+    desktop/client/src/tcpservice.cpp
 
 )
 
@@ -68,6 +70,9 @@ target_link_libraries(desktop_client PUBLIC
 add_executable(desktop_server
     desktop/server/main.cpp
     desktop/server/src/window.cpp
+    desktop/server/src/comservice.cpp
+    desktop/server/src/tcpservice.cpp
+    
 )
 
 target_include_directories(desktop_server PRIVATE
