@@ -67,9 +67,6 @@ static constexpr int text_font_size = 24;
 static constexpr float text_offset = 15.0f;
 static constexpr int text_step = 5;
 
-// Animation speed
-static constexpr int interval = 12;
-
 // Temperature Settings
 static constexpr float temperature_icon_width = 40.0f;
 static constexpr float temperature_icon_height = 85.0f;
@@ -121,7 +118,7 @@ static bool current_connection_status = false; // True if connected, false if no
 Canvas::Canvas(QWidget *parent) {
     // Setup Window Size
     setParent(parent);
-    setFixedSize(parent->width() - offset, parent->height() - offset);
+    setFixedSize(800 - offset, 600 - offset);
 
     painter = nullptr; // Init painter
 
@@ -152,6 +149,26 @@ void Canvas::paintEvent(QPaintEvent *event) {
     show_temperature();
     show_battery();
     blinker();
+}
+
+void Canvas::update_all(const int speed, const int temperature, const int battery,
+                        const int left_blinker, const int right_blinker, const bool connected) {
+    set_speed(speed);
+    set_temperature(temperature);
+    set_battery(battery);
+
+    if (left_blinker && right_blinker)
+        set_blinker(3);
+    else if (left_blinker)
+        set_blinker(2);
+    else if (right_blinker)
+        set_blinker(1);
+    else
+        set_blinker(0);
+
+    is_connected(connected);
+
+    update();
 }
 
 void Canvas::draw_circle() const {
@@ -457,10 +474,9 @@ void Canvas::set_speed(int speed) {
     target_angle_deg = qDegreesToRadians(angle_deg);
 
     current_angle_deg = target_angle_deg;
-    update();
 }
 
-void Canvas::set_temperature(const int temperature) const {
+void Canvas::set_temperature(const int temperature) {
     current_temperature = qBound(min_temperature, temperature, max_temperature);
 }
 
@@ -468,14 +484,12 @@ void Canvas::set_battery(const int battery_percent) {
     current_battery = qBound(min_battery, battery_percent, max_battery);
     target_battery_fill = static_cast<float>(current_battery);
     current_battery_fill = target_battery_fill;
-
-    update();
 }
 
-void Canvas::set_blinker(const int blinker_state) const {
+void Canvas::set_blinker(const int blinker_state) {
     blinker_position = blinker_state;
 }
 
-void Canvas::is_connected(const bool status) const {
+void Canvas::is_connected(const bool status) {
     current_connection_status = status;
 }

@@ -5,19 +5,14 @@
 #include <QWidget>
 
 class Canvas : public QWidget {
-    QTimer *needle_timer{};
-    QTimer *battery_timer{};
-    QTimer *blinker_timer{};
     QPainter *painter{};
 
-public:
-    explicit Canvas(QWidget *parent = nullptr);
-
+private:
     /**
-     * @brief A Function to set the current speed
-     *
-     * @param speed The current speed
-     */
+ * @brief A Function to set the current speed
+ *
+ * @param speed The current speed
+ */
     void set_speed(int speed);
 
     /**
@@ -25,33 +20,48 @@ public:
      *
      * @param temperature The current temperature
      */
-    void set_temperature(int temperature) const;
+    static void set_temperature(int temperature);
 
     /**
      * @brief A Function to set the current battery in precent
      *
      * @param battery_percent The current battery
      */
-    void set_battery(int battery_percent);
+    static void set_battery(int battery_percent);
 
     /**
-     * @brief A Helper Function to calculate the angle of the needle from the current speed
-     */
-    [[nodiscard]] static int speed_from_angle();
-
-    /**
-     * @brief Function to turn on [left, right, warning] blinkers or off
-     *
-     * @param blinker_state The state of the blinker, ether on [left, right, warning] or off
-     */
-    void set_blinker(int blinker_state) const;
+ * @brief Function to turn on [left, right, warning] blinkers or off
+ *
+ * @param blinker_state The state of the blinker, ether on [left, right, warning] or off
+ */
+    static void set_blinker(int blinker_state);
 
     /**
      * @brief Function to display the disconnect warning
      *
      * @param status The status of connection its ether true [connected] or false [not connected]
      */
-    void is_connected(bool status) const;
+    static void is_connected(bool status);
+
+    /**
+ * @brief A Helper Function to calculate the angle of the needle from the current speed
+ */
+    [[nodiscard]] static int speed_from_angle();
+
+public:
+    explicit Canvas(QWidget *parent = nullptr);
+
+    /**
+     * @brief Function to update all variables in the same time
+     *
+     * @param speed New speed in kmh
+     * @param temperature New Temperature in Celsius
+     * @param battery New Battery precent
+     * @param left_blinker 1 if left blinker on / 1 if warning on / 0 if off
+     * @param right_blinker 1 if right blinker on / 1 if warning on / 0 if off
+     * @param connected True if connected successfully and false if not
+     */
+    void update_all(int speed, int temperature, int battery, int left_blinker, int right_blinker, bool connected);
 
 protected:
     /**
