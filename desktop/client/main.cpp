@@ -8,8 +8,7 @@
 #include "window.h"
 #include <QTimer>
 
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
     QApplication app(argc, argv);
 
 #ifdef UARTCOM
@@ -22,8 +21,7 @@ int main(int argc, char **argv)
     w.show();
 
     QTimer *timer = new QTimer(&w);
-    QObject::connect(timer, &QTimer::timeout, [&]()
-                     {
+    QObject::connect(timer, &QTimer::timeout, [&]() {
         w.set_speed(service.getSpeed());
         w.set_temperature(service.getTemperature());
 
@@ -37,7 +35,8 @@ int main(int argc, char **argv)
             w.set_blinker(0); // off
 
         w.set_battery(service.getBatteryLevel());
-        w.set_connection_status(service.getStatus()); });
+        w.set_connection_status(service.getStatus());
+    });
     timer->start(100);
 
     return app.exec();

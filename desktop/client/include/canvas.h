@@ -18,7 +18,7 @@ public:
      *
      * @param speed The current speed
      */
-    void set_speed(int speed) const;
+    void set_speed(int speed);
 
     /**
      * @brief A Function to set the current temperature
@@ -32,7 +32,7 @@ public:
      *
      * @param battery_percent The current battery
      */
-    void set_battery(int battery_percent) const;
+    void set_battery(int battery_percent);
 
     /**
      * @brief A Helper Function to calculate the angle of the needle from the current speed
