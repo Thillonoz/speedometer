@@ -4,8 +4,7 @@
 #include <QThread>
 #include "comservice.h"
 
-class UARTService : public COMService, public QThread
-{
+class UARTService : public COMService, public QThread {
 };
 
 #endif
