@@ -13,7 +13,10 @@ private:
     static void set_serial_communication();
 
 public:
-    UARTService() = default;
+    UARTService() {
+        set_serial_communication();
+        QMetaObject::invokeMethod(this, "start", Qt::QueuedConnection);
+    };
 
     ~UARTService();
 };
