@@ -45,7 +45,7 @@ if(NOT EXISTS "${FONT_DEST_PATH}")
 endif()
 
 # Explicitly list sources for desktop client
-add_executable(desktop_client
+add_executable(client
     desktop/client/main.cpp
     desktop/client/src/canvas.cpp
     desktop/client/src/window.cpp
@@ -54,12 +54,12 @@ add_executable(desktop_client
 
 )
 
-target_include_directories(desktop_client PUBLIC
+target_include_directories(client PUBLIC
     ${CMAKE_SOURCE_DIR}/desktop/client/include
     ${CMAKE_SOURCE_DIR}/shared
 )
 
-target_link_libraries(desktop_client PUBLIC
+target_link_libraries(client PUBLIC
     Qt6::Core
     Qt6::Widgets
   
@@ -67,7 +67,7 @@ target_link_libraries(desktop_client PUBLIC
 
 
 # Explicitly list sources for desktop server
-add_executable(desktop_server
+add_executable(server
     desktop/server/main.cpp
     desktop/server/src/window.cpp
     desktop/server/src/comservice.cpp
@@ -75,12 +75,12 @@ add_executable(desktop_server
     
 )
 
-target_include_directories(desktop_server PRIVATE
+target_include_directories(server PRIVATE
     ${CMAKE_SOURCE_DIR}/desktop/server/include
     ${CMAKE_SOURCE_DIR}/shared
 )
 
-target_link_libraries(desktop_server PRIVATE
+target_link_libraries(server PRIVATE
     Qt6::Core
     Qt6::Widgets
    
