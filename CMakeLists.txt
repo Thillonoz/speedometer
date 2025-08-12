@@ -19,29 +19,29 @@ set(FONT_DEST_DIR "$ENV{HOME}/.local/share/fonts")
 set(FONT_DEST_PATH "${FONT_DEST_DIR}/${FONT_NAME}")
 
 # Only install if it's not already installed in ~/.local/share/fonts
-if(NOT EXISTS "${FONT_DEST_PATH}")
+if (NOT EXISTS "${FONT_DEST_PATH}")
     message(STATUS "MaterialIcons.ttf not found in user fonts. Installing from local res...")
 
-    if(NOT EXISTS "${FONT_SOURCE_PATH}")
+    if (NOT EXISTS "${FONT_SOURCE_PATH}")
         message(FATAL_ERROR "Local font file not found: ${FONT_SOURCE_PATH}")
-    endif()
+    endif ()
 
     file(MAKE_DIRECTORY "${FONT_DEST_DIR}")
     file(COPY "${FONT_SOURCE_PATH}" DESTINATION "${FONT_DEST_DIR}")
 
     execute_process(
-        COMMAND fc-cache -f -v "${FONT_DEST_DIR}"
-        RESULT_VARIABLE FC_RESULT
-        OUTPUT_VARIABLE FC_OUTPUT
-        ERROR_VARIABLE FC_ERROR
+            COMMAND fc-cache -f -v "${FONT_DEST_DIR}"
+            RESULT_VARIABLE FC_RESULT
+            OUTPUT_VARIABLE FC_OUTPUT
+            ERROR_VARIABLE FC_ERROR
     )
 
-    if(NOT FC_RESULT EQUAL 0)
+    if (NOT FC_RESULT EQUAL 0)
         message(WARNING "fc-cache failed: ${FC_ERROR}")
-    else()
+    else ()
         message(STATUS "fc-cache succeeded:\n${FC_OUTPUT}")
-    endif()
-endif()
+    endif ()
+endif ()
 
 # Explicitly list sources for desktop client using tcp
 add_executable(client_tcp
@@ -82,7 +82,6 @@ target_link_libraries(client_uart PUBLIC
     Qt6::Core
     Qt6::Widgets
     Qt6::SerialPort
-  
 )
 
 target_compile_definitions(client_uart PRIVATE UARTCOM)
@@ -104,7 +103,6 @@ target_include_directories(server_tcp PRIVATE
 target_link_libraries(server_tcp PRIVATE
     Qt6::Core
     Qt6::Widgets
-   
 )
 
 # Explicitly list sources for desktop server using uart
