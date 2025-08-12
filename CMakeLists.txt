@@ -9,7 +9,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_compile_options(-Wall -Wextra -Wpedantic -Werror)
 
 # Find Qt6 components for GUI and SerialPort
-find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
+find_package(Qt6 REQUIRED COMPONENTS Core Widgets SerialPort)
 
 
 # Handle MaterialIcons.ttf font install
@@ -20,70 +20,70 @@ set(FONT_DEST_DIR "$ENV{HOME}/.local/share/fonts")
 set(FONT_DEST_PATH "${FONT_DEST_DIR}/${FONT_NAME}")
 
 # Only install if it's not already installed in ~/.local/share/fonts
-if(NOT EXISTS "${FONT_DEST_PATH}")
+if (NOT EXISTS "${FONT_DEST_PATH}")
     message(STATUS "MaterialIcons.ttf not found in user fonts. Installing from local res...")
 
-    if(NOT EXISTS "${FONT_SOURCE_PATH}")
+    if (NOT EXISTS "${FONT_SOURCE_PATH}")
         message(FATAL_ERROR "Local font file not found: ${FONT_SOURCE_PATH}")
-    endif()
+    endif ()
 
     file(MAKE_DIRECTORY "${FONT_DEST_DIR}")
     file(COPY "${FONT_SOURCE_PATH}" DESTINATION "${FONT_DEST_DIR}")
 
     execute_process(
-        COMMAND fc-cache -f -v "${FONT_DEST_DIR}"
-        RESULT_VARIABLE FC_RESULT
-        OUTPUT_VARIABLE FC_OUTPUT
-        ERROR_VARIABLE FC_ERROR
+            COMMAND fc-cache -f -v "${FONT_DEST_DIR}"
+            RESULT_VARIABLE FC_RESULT
+            OUTPUT_VARIABLE FC_OUTPUT
+            ERROR_VARIABLE FC_ERROR
     )
 
-    if(NOT FC_RESULT EQUAL 0)
+    if (NOT FC_RESULT EQUAL 0)
         message(WARNING "fc-cache failed: ${FC_ERROR}")
-    else()
+    else ()
         message(STATUS "fc-cache succeeded:\n${FC_OUTPUT}")
-    endif()
-endif()
+    endif ()
+endif ()
 
 # Explicitly list sources for desktop client
 add_executable(client
-    desktop/client/main.cpp
-    desktop/client/src/canvas.cpp
-    desktop/client/src/window.cpp
-    desktop/client/src/comservice.cpp
-    desktop/client/src/tcpservice.cpp
+        desktop/client/main.cpp
+        desktop/client/src/canvas.cpp
+        desktop/client/src/window.cpp
+        desktop/client/src/comservice.cpp
+        desktop/client/src/tcpservice.cpp
 
 )
 
 target_include_directories(client PUBLIC
-    ${CMAKE_SOURCE_DIR}/desktop/client/include
-    ${CMAKE_SOURCE_DIR}/shared
+        ${CMAKE_SOURCE_DIR}/desktop/client/include
+        ${CMAKE_SOURCE_DIR}/shared
 )
 
 target_link_libraries(client PUBLIC
-    Qt6::Core
-    Qt6::Widgets
-  
+        Qt6::Core
+        Qt6::Widgets
+        Qt6::SerialPort
 )
 
 
 # Explicitly list sources for desktop server
 add_executable(server
-    desktop/server/main.cpp
-    desktop/server/src/window.cpp
-    desktop/server/src/comservice.cpp
-    desktop/server/src/tcpservice.cpp
-    
+        desktop/server/main.cpp
+        desktop/server/src/window.cpp
+        desktop/server/src/comservice.cpp
+        desktop/server/src/tcpservice.cpp
+        desktop/server/src/uartservice.cpp
 )
 
 target_include_directories(server PRIVATE
-    ${CMAKE_SOURCE_DIR}/desktop/server/include
-    ${CMAKE_SOURCE_DIR}/shared
+        ${CMAKE_SOURCE_DIR}/desktop/server/include
+        ${CMAKE_SOURCE_DIR}/shared
 )
 
 target_link_libraries(server PRIVATE
-    Qt6::Core
-    Qt6::Widgets
-   
+        Qt6::Core
+        Qt6::Widgets
+        Qt6::SerialPort
 )
 
 
