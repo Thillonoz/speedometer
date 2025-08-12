@@ -1,6 +1,3 @@
-
-#define UARTCOM
-
 #ifdef UARTCOM
 #include "uartservice.h"
 #else
