@@ -1,5 +1,6 @@
 #include <QSerialPort>
 #include <QDebug>
+#include <mutex>
 
 #include "uartservice.h"
 #include "setting.h"
@@ -15,6 +16,7 @@ void UARTService::run() {
             qDebug() << "Failed to open serial port";
         }
     } {
+        std::unique_lock<std::mutex> lock;
         QByteArray data;
         for (int i = 0; i < BUFLEN; i++) {
             data.append(buffer[i]);
