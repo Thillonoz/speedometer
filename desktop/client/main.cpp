@@ -1,5 +1,5 @@
 #ifdef UARTCOM
-#include "uartcom.h"
+#include "uartservice.h"
 #else
 #include "tcpservice.h"
 #endif
@@ -11,7 +11,7 @@ int main(int argc, char **argv) {
     QApplication app(argc, argv);
 
 #ifdef UARTCOM
-    UARTSERVICE service;
+    UARTService service;
 #else
     TCPService service;
 #endif
