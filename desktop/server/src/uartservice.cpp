@@ -3,6 +3,7 @@
 #include <mutex>
 
 #include "uartservice.h"
+
 #include "setting.h"
 
 static QSerialPort serial;
@@ -15,18 +16,24 @@ void UARTService::run() {
         if (!serial.open(QSerialPort::WriteOnly)) {
             qDebug() << "Failed to open serial port";
         }
-    } {
-        std::unique_lock<std::mutex> lock;
-        QByteArray data;
-        for (int i = 0; i < BUFLEN; i++) {
-            data.append(buffer[i]);
-        }
-
-        serial.write(data);
     }
 
-    sleep(Setting::INTERVAL);
+    std::unique_lock<std::mutex> lock;
+    QByteArray data;
+    for (int i = 0; i < BUFLEN; i++) {
+        data.append(buffer[i]);
+    }
+
+    serial.write(data);
+    lock.unlock();
+
+    QThread::msleep(Setting::INTERVAL);
+
     exec();
+
+    if (serial.isOpen()) {
+        serial.close();
+    }
 }
 
 void UARTService::set_serial_communication() {
@@ -39,9 +46,6 @@ void UARTService::set_serial_communication() {
 }
 
 UARTService::~UARTService() {
-    if (serial.isOpen()) {
-        serial.close();
-    }
     quit();
     wait();
 }
