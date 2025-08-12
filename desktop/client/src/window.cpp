@@ -1,8 +1,11 @@
+#include "setting.h"
 #include "window.h"
 
-#include "setting.h"
+#include <QVBoxLayout>
 #include <QPalette>
 #include <csignal>
+
+static constexpr QColor bg_color = QColor(122, 29, 191);
 
 Window::Window(QWidget *parent, COMService &comservice)
     : QDialog(parent), comservice(comservice) // <-- initialize here
@@ -11,47 +14,41 @@ Window::Window(QWidget *parent, COMService &comservice)
     setFixedSize(800, 600);
     setWindowFlags(Qt::WindowStaysOnTopHint);
 
-    canvas = new Canvas(this);
     set_bg_color();
+
+    QVBoxLayout *layout = new QVBoxLayout(this);
+    layout->setContentsMargins(0, 0, 0, 0);
+
+    canvas.setParent(this);
+    layout->addWidget(&canvas);
+
+    setLayout(layout);
+
+    // Set timer
+    connect(&update_timer, &QTimer::timeout, this, &Window::update_from_service);
+    update_timer.start(Setting::INTERVAL);
 }
 
-void Window::set_bg_color()
-{
+void Window::set_bg_color() {
     QPalette palette = QPalette();
-    palette.setColor(QPalette::Window, QColor(122, 29, 191));
+    palette.setColor(QPalette::Window, bg_color);
 
     setAutoFillBackground(true);
     setPalette(palette);
 }
 
-void Window::set_speed(const int speed) const
-{
-    canvas->set_speed(speed);
-}
-
-void Window::set_temperature(const int temperature) const
-{
-    canvas->set_temperature(temperature);
-}
-
-void Window::set_battery(const int battery_percent) const
-{
-    canvas->set_battery(battery_percent);
-}
-
-void Window::set_blinker(const int blinker_state) const
-{
-    canvas->set_blinker(blinker_state);
-}
-
-void Window::set_connection_status(const bool connection_status) const
-{
-    canvas->is_connected(connection_status);
-};
-
-void Window::closeEvent(QCloseEvent *event)
-{
+void Window::closeEvent(QCloseEvent *event) {
     std::raise(SIGINT);
-
     event->accept();
+}
+
+void Window::update_from_service() {
+    canvas.update_all(
+        comservice.getSpeed(),
+        comservice.getTemperature(),
+        comservice.getBatteryLevel(),
+        comservice.getLeftLight(),
+        comservice.getRightLight(),
+        comservice.getStatus()
+    );
 }
