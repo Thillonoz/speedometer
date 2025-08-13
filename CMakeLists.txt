@@ -9,14 +9,21 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_compile_options(-Wall -Wextra -Wpedantic -Werror)
 
 # Find Qt6 components for GUI and SerialPort
-find_package(Qt6 REQUIRED COMPONENTS Core Widgets SerialPort)
+find_package(Qt6 REQUIRED COMPONENTS Core Widgets SerialPort Multimedia)
+
+set(RES_DIR "${CMAKE_SOURCE_DIR}/desktop/client/res")
 
 # Handle MaterialIcons.ttf font install
 # === Install MaterialIcons.ttf from local res folder ===
 set(FONT_NAME "MaterialIcons.ttf")
-set(FONT_SOURCE_PATH "${CMAKE_SOURCE_DIR}/desktop/client/res/${FONT_NAME}")
+set(FONT_SOURCE_PATH "${RES_DIR}/${FONT_NAME}")
 set(FONT_DEST_DIR "$ENV{HOME}/.local/share/fonts")
 set(FONT_DEST_PATH "${FONT_DEST_DIR}/${FONT_NAME}")
+
+set(WAV_FILE "sound.wav")
+if (NOT EXISTS "${CMAKE_BINARY_DIR}/${WAV_FILE}")
+    file(COPY "${RES_DIR}/${WAV_FILE}" DESTINATION ${CMAKE_BINARY_DIR})
+endif()
 
 # Only install if it's not already installed in ~/.local/share/fonts
 if (NOT EXISTS "${FONT_DEST_PATH}")
