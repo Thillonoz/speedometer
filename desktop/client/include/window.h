@@ -19,7 +19,7 @@ class Window final : public QDialog {
     void set_bg_color();
 
 public:
-    Window(QWidget *parent, COMService &comservice);
+    Window(COMService &comservice);
 
 private slots:
     void update_from_service();
