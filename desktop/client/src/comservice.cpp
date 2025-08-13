@@ -8,20 +8,22 @@ void COMService::extract(uint32_t start, uint32_t length, uint32_t &value)
     int cursor = start % CHAR_BIT;
     int index = start / CHAR_BIT;
 
-    for (size_t i = 0; i < length; i++)
-    {
-        uint8_t bit = (uint8_t)((this->buffer[index] >> cursor) & 1);
-
-        if (bit == 1)
+    if (status) {
+        for (size_t i = 0; i < length; i++)
         {
-            value |= (1 << i);
-        }
+            uint8_t bit = (uint8_t)((this->buffer[index] >> cursor) & 1);
 
-        cursor++;
-        if (cursor == CHAR_BIT)
-        {
-            cursor = 0;
-            index++;
+            if (bit == 1)
+            {
+                value |= (1 << i);
+            }
+
+            cursor++;
+            if (cursor == CHAR_BIT)
+            {
+                cursor = 0;
+                index++;
+            }
         }
     }
     mtx.unlock();
