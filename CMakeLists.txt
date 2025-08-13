@@ -67,6 +67,7 @@ target_include_directories(client_tcp PUBLIC
 target_link_libraries(client_tcp PUBLIC
     Qt6::Core
     Qt6::Widgets
+    Qt6::Multimedia
 )
 
 # Explicitly list sources for desktop client using uart
@@ -89,6 +90,7 @@ target_link_libraries(client_uart PUBLIC
     Qt6::Core
     Qt6::Widgets
     Qt6::SerialPort
+    Qt6::Multimedia
 )
 
 target_compile_definitions(client_uart PRIVATE UARTCOM)
