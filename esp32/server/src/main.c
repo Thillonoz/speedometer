@@ -12,6 +12,9 @@
 #include "setting.h"
 #include <stdbool.h>
 
+#define TEMP_TESTING // GPIO testing, comment out to disable
+#ifdef TEMP_TESTING
+
 #include "driver/gpio.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
@@ -19,47 +22,54 @@
 #include <unistd.h>
 
 #define LED_GPIO GPIO_NUM_4
-#define UART UART_NUM_0
-#define BUF_SIZE (2 * SOC_UART_FIFO_LEN) // SOC_UART_FIFO_LEN
-#define MSGLEN BUFLEN
 
 void tempstart(void) {
-  // Define the GPIO pin for the LED
-
-  // Define a tag for logging
   static const char *TAG = "LED_CONTROL";
 
   ESP_LOGI(TAG, "Configuring GPIO...");
 
-  // Reset the pin to a known state before configuring
   gpio_reset_pin(LED_GPIO);
+  gpio_config_t io_conf = {.pin_bit_mask = (1ULL << LED_GPIO),
+                           .mode = GPIO_MODE_OUTPUT,
+                           .pull_up_en = GPIO_PULLUP_DISABLE,
+                           .pull_down_en = GPIO_PULLDOWN_DISABLE,
+                           .intr_type = GPIO_INTR_DISABLE};
 
-  /*
-   * Configure the GPIO pin:
-   * - Set the direction to output.
-   * - The configuration is encapsulated in the gpio_config_t structure.
-   */
-  gpio_config_t io_conf = {
-      // bit mask of the pins to set, e.g. (1ULL << LED_GPIO)
-      .pin_bit_mask = (1ULL << LED_GPIO),
-      // set as output mode
-      .mode = GPIO_MODE_OUTPUT,
-      // disable pull-up mode
-      .pull_up_en = GPIO_PULLUP_DISABLE,
-      // disable pull-down mode
-      .pull_down_en = GPIO_PULLDOWN_DISABLE,
-      // disable interrupt
-      .intr_type = GPIO_INTR_DISABLE};
-
-  // Apply the configuration to the GPIO pin
   ESP_ERROR_CHECK(gpio_config(&io_conf));
-
-  ESP_LOGI(TAG, "Configuration complete.");
 }
+
+void tempCheck(uint8_t *_buffer, uint8_t _bool) {
+  if (_bool == true) {
+    if (_buffer[0] == 0b00000001) { // speed
+      gpio_set_level(LED_GPIO, 1);
+    } else if (_buffer[1] == 0b00000001) { // temperature
+      gpio_set_level(LED_GPIO, 1);
+    } else if (_buffer[1] == 0b10000000) { // battery
+      gpio_set_level(LED_GPIO, 1);
+    } else if (_buffer[2] == 0b01000000) { // left blinker
+      gpio_set_level(LED_GPIO, 1);
+    } else if (_buffer[2] == 0b10000000) { // right blinker
+      gpio_set_level(LED_GPIO, 1);
+    } else if (_buffer[2] == 0b11000000) { // warning blinker
+      gpio_set_level(LED_GPIO, 1);
+    } else {
+      gpio_set_level(LED_GPIO, 0);
+    }
+  } else {
+    gpio_set_level(LED_GPIO, 1);
+  }
+}
+#endif
+
+#define UART UART_NUM_0
+#define BUF_SIZE (2 * SOC_UART_FIFO_LEN) // SOC_UART_FIFO_LEN
+#define MSGLEN BUFLEN
+
+// Setting::INTERVAL, change when setting is updated.
+static const int INTERVAL = 40;
 
 void app_main() {
   tempstart();
-  static const char *TAG = "UART_Example";
 
   uart_config_t config = {
       .baud_rate = BAUDRATE,
@@ -74,21 +84,18 @@ void app_main() {
   ESP_ERROR_CHECK(uart_driver_install(UART, BUF_SIZE, 0, 0, NULL, 0));
   ESP_ERROR_CHECK(uart_param_config(UART, &config));
 
-  ESP_LOGI(TAG, "UART initialized");
-
   uint8_t buffer[BUF_SIZE] = {0};
 
   while (1) {
-    gpio_set_level(LED_GPIO, 0);
     if (MSGLEN == uart_read_bytes(UART, buffer, MSGLEN, portMAX_DELAY)) {
-      ESP_LOGI(TAG, "Received data: %.*s", MSGLEN, buffer);
-      gpio_set_level(LED_GPIO, 1);
-      usleep(40000); // Sleep 
+#ifdef TEMP_TESTING
+      tempCheck(buffer, true);
+#endif
     } else {
-      ESP_LOGE(TAG, "Failed to read");
-      gpio_set_level(LED_GPIO, 1);
-      usleep(40000); // Sleep
-      gpio_set_level(LED_GPIO, 0);
+#ifdef TEMP_TESTING
+      tempCheck(buffer, false);
+#endif
     }
+    vTaskDelay(pdMS_TO_TICKS(INTERVAL));
   }
 }
