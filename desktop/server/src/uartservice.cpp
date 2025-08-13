@@ -20,10 +20,7 @@ void UARTService::run() {
 
     while (serial.isOpen()) {
         mutex.lock();
-        QByteArray data;
-        for (int i = 0; i < BUFLEN; i++) {
-            data.append(buffer[i]);
-        }
+        QByteArray data(reinterpret_cast<const char *>(buffer), BUFLEN);
 
         serial.write(data);
         serial.flush();
