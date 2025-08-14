@@ -2,19 +2,20 @@
 #define UARTSERVICE_H
 
 #include <QThread>
+#include <QSerialPort>
 #include "comservice.h"
 
 class UARTService : public COMService, public QThread {
-    static constexpr char port_name[13] = "/dev/ttyACM0";
+    QSerialPort *serial;
+    static constexpr char port_name[13] = "/dev/ttyUSB0";
 
 private:
     void run(void) override;
 
-    static void set_serial_communication();
+    void set_serial_communication();
 
 public:
     UARTService() {
-        set_serial_communication();
         QMetaObject::invokeMethod(this, "start", Qt::QueuedConnection);
     };
 
