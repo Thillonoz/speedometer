@@ -62,6 +62,38 @@ namespace Setting
         constexpr char IP[]{"127.0.0.1"};
     }
 }
+#else
+
+#include <stdint.h>
+
+typedef struct
+{
+    int length;
+    int start;
+    int min;
+    int max;
+} signal_value_t;
+
+typedef struct
+{
+    signal_value_t value;
+    const char *name;
+} signal_entry_t;
+
+static const signal_entry_t signal_table[] = SIGNAL_LIST;
+
+#undef SIGNAL_LIST
+
+#define SIGNAL_COUNT (sizeof(signal_table) / sizeof(signal_table[0]))
+
+// Access macros for C
+#define SIGNAL_NAME(i) (signal_table[i].name)
+#define SIGNAL_LENGTH(i) (signal_table[i].value.length)
+#define SIGNAL_START(i) (signal_table[i].value.start)
+#define SIGNAL_MIN(i) (signal_table[i].value.min)
+#define SIGNAL_MAX(i) (signal_table[i].value.max)
+
+#define INTERVAL 40
 
 #endif // __cplusplus
 
