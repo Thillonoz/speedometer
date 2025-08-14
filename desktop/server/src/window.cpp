@@ -2,8 +2,7 @@
 #include "setting.h"
 #include <csignal>
 
-Window::Window(COMService &_COMHandle) : COMHandle{_COMHandle}
-{
+Window::Window(COMService &_COMHandle) : COMHandle{_COMHandle} {
   QString startLabelText;
   Setting::Signal &settingSignals{Setting::Signal::handle()};
 
@@ -87,8 +86,7 @@ Window::Window(COMService &_COMHandle) : COMHandle{_COMHandle}
           &Window::onClickWarningIndicator);
 }
 
-void Window::onSlideSpeed(int _value)
-{
+void Window::onSlideSpeed(int _value) {
   QString temp;
   temp.setNum(_value);
   temp.append(SPEED_SUFFIX);
@@ -97,8 +95,7 @@ void Window::onSlideSpeed(int _value)
   COMHandle.insertSpeed(_value);
 }
 
-void Window::onSlideTemperature(int _value)
-{
+void Window::onSlideTemperature(int _value) {
   QString temp;
   temp.setNum(_value);
   temp.append(TEMPERATURE_SUFFIX);
@@ -107,8 +104,7 @@ void Window::onSlideTemperature(int _value)
   COMHandle.insertTemperature(_value);
 }
 
-void Window::onSlideBatteryLevel(int _value)
-{
+void Window::onSlideBatteryLevel(int _value) {
   QString temp;
   temp.setNum(_value);
   temp.append(BATTERY_SUFFIX);
@@ -117,83 +113,58 @@ void Window::onSlideBatteryLevel(int _value)
   COMHandle.insertBatteryLevel(_value);
 }
 
-void Window::onClickLeftIndicator(int _state)
-{
-  if (_state == Qt::CheckState::Checked)
-  {
+void Window::onClickLeftIndicator(int _state) {
+  if (_state == Qt::CheckState::Checked) {
     indicatorRight.setDisabled(true);
     indicatorRight.setCheckState(Qt::CheckState::Unchecked);
     COMHandle.insertLeftLight(true);
-  }
-  else
-  {
-    if (indicatorWarning.checkState() == Qt::CheckState::Unchecked)
-    {
+  } else {
+    if (indicatorWarning.checkState() == Qt::CheckState::Unchecked) {
       COMHandle.insertLeftLight(false);
-    }
-    else
-    {
+    } else {
       ;
     }
     indicatorRight.setDisabled(false);
   }
 }
 
-void Window::onClickRightIndicator(int _state)
-{
-  if (_state == Qt::CheckState::Checked)
-  {
+void Window::onClickRightIndicator(int _state) {
+  if (_state == Qt::CheckState::Checked) {
     indicatorLeft.setDisabled(true);
     indicatorLeft.setCheckState(Qt::CheckState::Unchecked);
     COMHandle.insertRightLight(true);
-  }
-  else
-  {
-    if (indicatorWarning.checkState() == Qt::CheckState::Unchecked)
-    {
+  } else {
+    if (indicatorWarning.checkState() == Qt::CheckState::Unchecked) {
       COMHandle.insertRightLight(false);
-    }
-    else
-    {
+    } else {
       ;
     }
     indicatorLeft.setDisabled(false);
   }
 }
 
-void Window::onClickWarningIndicator(int _state)
-{
+void Window::onClickWarningIndicator(int _state) {
   // Warning is on, both lights true.
-  if (_state == Qt::CheckState::Checked)
-  {
+  if (_state == Qt::CheckState::Checked) {
     COMHandle.insertRightLight(true);
     COMHandle.insertLeftLight(true);
   }
   // When warning turns off, both lights false, or only one depending on if left or right is checked.
-  else if (_state == Qt::CheckState::Unchecked)
-  {
-    if (indicatorLeft.checkState() == Qt::CheckState::Checked)
-    {
+  else if (_state == Qt::CheckState::Unchecked) {
+    if (indicatorLeft.checkState() == Qt::CheckState::Checked) {
       COMHandle.insertRightLight(false);
-    }
-    else if (indicatorRight.checkState() == Qt::CheckState::Checked)
-    {
+    } else if (indicatorRight.checkState() == Qt::CheckState::Checked) {
       COMHandle.insertLeftLight(false);
-    }
-    else
-    {
+    } else {
       COMHandle.insertRightLight(false);
       COMHandle.insertLeftLight(false);
     }
-  }
-  else
-  {
+  } else {
     ;
   }
 }
 
-void Window::closeEvent(QCloseEvent *event)
-{
+void Window::closeEvent(QCloseEvent *event) {
   std::raise(SIGINT);
   event->accept();
 }

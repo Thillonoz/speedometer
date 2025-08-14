@@ -16,7 +16,7 @@ int main(int argc, char **argv) {
     TCPService service;
 #endif
 
-    Window w(nullptr, service);
+    Window w(service);
     w.show();
 
     return app.exec();
