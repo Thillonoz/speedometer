@@ -115,13 +115,31 @@ static constexpr float disconnect_font_size = 50.0f;
 
 static bool current_connection_status = false; // True if connected, false if not
 
-Canvas::Canvas(QWidget *parent)
+Canvas::Canvas(QWidget *parent) : QWidget(parent), mediaPlayer(this), audioOutput(this)
 {
     // Setup Window Size
     setParent(parent);
     setFixedSize(800 - offset, 600 - offset);
 
     painter = nullptr; // Init painter
+
+    mediaPlayer.setAudioOutput(&audioOutput);
+    mediaPlayer.setLoops(QMediaPlayer::Infinite);
+
+    blinkTimer.setInterval(Setting::INTERVAL);
+    connect(&blinkTimer, &QTimer::timeout, this, [this]()
+            {
+                if (blinker_position > 0)
+                {
+                    blinkerSound = true;
+                }
+                else
+                {
+                    blinkerSound = false;
+                }
+                update(); // trigger repaint
+            });
+    blinkTimer.start();
 
     current_speed = max_speed; // Set current speed to max speed
 }
@@ -132,10 +150,7 @@ void Canvas::paintEvent(QPaintEvent *event)
 
     // Setup Painter
     QPainter localPainter(this);
-    QMediaPlayer localMediaPlayer(this);
-
     painter = &localPainter;
-    mediaPlayer = &localMediaPlayer;
 
     painter->setRenderHints(QPainter::Antialiasing, true);
 
@@ -165,13 +180,21 @@ void Canvas::update_all(const int speed, const int temperature, const int batter
     set_battery(battery);
 
     if (left_blinker && right_blinker)
-        set_blinker(3);
+    {
+        if (blinker_position != 3) set_blinker(3);
+    }
     else if (left_blinker)
-        set_blinker(2);
+    {
+        if (blinker_position != 2) set_blinker(2);
+    }
     else if (right_blinker)
-        set_blinker(1);
+    {
+        if (blinker_position != 1) set_blinker(1);
+    }
     else
-        set_blinker(0);
+    {
+        if (blinker_position != 0) set_blinker(0);
+    }
 
     is_connected(connected);
 
@@ -465,7 +488,7 @@ void Canvas::blinker()
     iconFont.setPointSize(60);
     painter->setFont(iconFont);
     QColor color = Qt::white;
-    int ms;
+    int ms = 0;
 
     if (blinker_position == 1) // right blinker
     {
@@ -474,8 +497,6 @@ void Canvas::blinker()
         color = (ms < 500) ? Qt::green : Qt::transparent;
         painter->setPen(color);
         painter->drawText(QPointF(580.0f, 90.0f), QChar(0xe5c8));
-        if (ms < 500)
-            playBlinkerSound(true);
     }
     else if (blinker_position == 2) // left blinker
     {
@@ -484,8 +505,6 @@ void Canvas::blinker()
         color = (ms < 500) ? Qt::green : Qt::transparent;
         painter->setPen(color);
         painter->drawText(QPointF(60.0f, 90.0f), QChar(0xe5c4));
-        if (ms < 500)
-            playBlinkerSound(true);
     }
     else if (blinker_position == 3) // warning lights
     {
@@ -495,31 +514,26 @@ void Canvas::blinker()
         painter->drawText(QPointF(580.0f, 90.0f), QChar(0xe5c8));
 
         painter->drawText(QPointF(60.0f, 90.0f), QChar(0xe5c4));
-        if (ms < 500)
-            playBlinkerSound(true);
     }
     else // no blinker
     {
         color = Qt::transparent;
-        playBlinkerSound(false);
     }
 }
 
 void Canvas::playBlinkerSound(bool _isActive)
 {
-    if (_isActive == true)
+    if (_isActive)
     {
-        if (QMediaPlayer::MediaStatus::EndOfMedia == mediaPlayer->mediaStatus() ||
-            QMediaPlayer::PlaybackState::PlayingState != mediaPlayer->playbackState())
+        if ((QMediaPlayer::MediaStatus::EndOfMedia == mediaPlayer.mediaStatus()) || (QMediaPlayer::PlaybackState::PlayingState != mediaPlayer.playbackState()))
         {
-            mediaPlayer->setSource(QUrl());
-            mediaPlayer->setSource(QUrl::fromLocalFile("sound.wav"));
-            mediaPlayer->play();
+            mediaPlayer.setSource(QUrl::fromLocalFile("./sound.wav"));
+            mediaPlayer.play();
         }
     }
     else
     {
-        mediaPlayer->stop();
+        mediaPlayer.pause();
     }
 }
 
@@ -552,7 +566,11 @@ void Canvas::set_battery(const int battery_percent)
 
 void Canvas::set_blinker(const int blinker_state)
 {
-    blinker_position = blinker_state;
+    if (blinker_position != blinker_state)
+    {
+        blinker_position = blinker_state;
+        playBlinkerSound(blinker_position > 0);
+    }
 }
 
 void Canvas::is_connected(const bool status)
