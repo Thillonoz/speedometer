@@ -2,10 +2,9 @@
 #define WINDOW_H
 
 #include <QCloseEvent>
-#include <QDialog>
 #include <QFormLayout>
-#include <QString>
 #include <QVBoxLayout>
+#include <QDialog>
 
 #include <QCheckBox>
 #include <QLabel>
@@ -13,8 +12,7 @@
 
 #include "comservice.h"
 
-class Window : public QDialog
-{
+class Window : public QDialog {
   static constexpr const char *SPEED_SUFFIX{" Km/h"};
   static constexpr const char *TEMPERATURE_SUFFIX{" °C"};
   static constexpr const char *BATTERY_SUFFIX{" %"};
@@ -44,10 +42,15 @@ private:
 
 private:
   void onSlideSpeed(int);
+
   void onSlideTemperature(int);
+
   void onSlideBatteryLevel(int);
+
   void onClickLeftIndicator(int);
+
   void onClickRightIndicator(int);
+
   void onClickWarningIndicator(int);
 
 private:
