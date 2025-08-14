@@ -66,7 +66,7 @@ void tempCheck(uint8_t *_buffer, uint8_t _bool) {
 #define MSGLEN BUFLEN
 
 // Setting::INTERVAL, change when setting is updated.
-static const int INTERVAL = 40;
+//static const int INTERVAL = 40;
 
 void app_main() {
   tempstart();

@@ -4,8 +4,6 @@
 #define BAUDRATE 1048576
 #define BUFLEN 3
 
-#ifdef __cplusplus
-
 #define SIGNAL_LIST {                     \
     {{8, 0, 0, 240}, "speed"},            \
     {{7, 8, -60, 60}, "temperature"},     \
@@ -13,6 +11,8 @@
     {{1, 22, 0, 1}, "left_turn_signal"},  \
     {{1, 23, 0, 1}, "right_turn_signal"}, \
 }
+#ifdef __cplusplus
+
 
 #include <map>
 #include <tuple>

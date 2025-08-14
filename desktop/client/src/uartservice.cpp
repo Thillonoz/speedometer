@@ -18,7 +18,7 @@ void UARTService::run()
     {
         if (!serial.open(QSerialPort::ReadOnly))
         { // RECEIVE-ONLY
-            qDebug() << "Failed to open serial port";
+            qDebug() << "Failed to open client serial port";
             return;
         }
     }
