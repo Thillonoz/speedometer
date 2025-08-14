@@ -6,32 +6,24 @@
 #include <arpa/inet.h>
 #include <sys/types.h>
 #include <netinet/in.h>
+#include <cstring>
 
 void TCPService::run(void)
 {
-    while (1)
+    sockaddr_in servaddr;
+    memset(&servaddr, 0, sizeof(sockaddr_in));
+
+    // Assign IP and PORT
+    servaddr.sin_family = AF_INET;
+    servaddr.sin_port = htons(Setting::TCPIP::PORT);
+    servaddr.sin_addr.s_addr = inet_addr(Setting::TCPIP::IP);
+
+    while (!end)
     {
         // Create socket and check
-        sockfd = -1;
         sockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
-        if (sockfd == -1)
+        if (sockfd > -1)
         {
-            std::cout << "Failed to create the socket..." << std::endl;
-        }
-        else
-        {
-            int opt = 1;
-            if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0)
-            {
-                std::cout << "Socket options failed." << std::endl;
-            }
-
-            sockaddr_in servaddr{};
-
-            // Assign IP and PORT
-            servaddr.sin_family = AF_INET;
-            servaddr.sin_port = htons(Setting::TCPIP::PORT);
-            servaddr.sin_addr.s_addr = inet_addr(Setting::TCPIP::IP);
 
             // Connect to the server
             if (0 == connect(sockfd, (sockaddr *)&servaddr, sizeof(servaddr)))
@@ -39,19 +31,24 @@ void TCPService::run(void)
                 std::cout << "Connected to the server."
                           << std::endl
                           << std::endl;
-                status = true;
 
-                while (status)
+                uint8_t temp[sizeof(buffer)]{0};
+                status = true;
+                
+                while (!end)
                 {
                     {
-                        std::lock_guard<std::mutex> lock(mtx);
-
-                        ssize_t bytes_read = read(sockfd, buffer, BUFLEN);
-                        if (bytes_read <= 0)
+                        
+                        if (sizeof(temp) != read(sockfd, temp, sizeof(temp)))
                         {
-                            std::cout << "Failed to read or connection closed by server." << std::endl;
                             status = false;
                             break;
+                        }
+                        else 
+                        {
+                            std::scoped_lock<std::mutex> locker{mtx};
+
+                             std::memcpy(buffer, temp, sizeof(buffer));
                         }
                     }
 
@@ -65,7 +62,8 @@ void TCPService::run(void)
                         << std::endl
                         << std::endl;
 
-                    usleep(Setting::INTERVAL * 1000);
+                        std::this_thread::sleep_for(std::chrono::milliseconds(Setting::INTERVAL));
+
                 }
 
                 shutdown(sockfd, SHUT_RDWR);
@@ -74,10 +72,9 @@ void TCPService::run(void)
             }
             else
             {
-                std::cout << "Connection to the server failed." << std::endl;
-                usleep(Setting::INTERVAL * 2000);
+                std::this_thread::sleep_for(std::chrono::milliseconds(Setting::INTERVAL * 2));
             }
         }
-        usleep(Setting::INTERVAL * 1000);
+        std::this_thread::sleep_for(std::chrono::milliseconds(Setting::INTERVAL));
     }
 }
