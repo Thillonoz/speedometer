@@ -442,16 +442,17 @@ void Canvas::show_battery() {
     painter->drawText(text_rect, Qt::AlignCenter, QString::number(current_battery_fill) + QString("%"));
 }
 
-void Canvas::blinker() {
-    // Drive blink phase from audio playback position to avoid QTimer
-    const qint64 posMs = mediaPlayer.position();
-    const bool phaseOn = (posMs % 1000) < 500; // 0.5s on, 0.5s off
+void Canvas::blinker() const {
+    constexpr int blink_period{16};
+    static int phase_on{0};
+
+    phase_on = (phase_on + 1) % (blink_period + 1);
 
     QFont iconFont = painter->font();
     iconFont.setPointSize(60);
     painter->setFont(iconFont);
 
-    QColor color = phaseOn ? Qt::green : Qt::transparent;
+    const QColor color = (phase_on <= (blink_period / 2)) ? Qt::green : Qt::transparent;
 
     if (blinker_position == 1) {
         // right blinker

@@ -5,18 +5,13 @@
 #include <QWidget>
 #include <QMediaPlayer>
 #include <QAudioOutput>
-#include <QTimer>
 
-class Canvas : public QWidget
-{
+class Canvas : public QWidget {
     QPainter *painter{};
 
 private:
     QMediaPlayer mediaPlayer;
     QAudioOutput audioOutput;
-    QTimer blinkTimer;
-    bool blinkVisible = false;
-    bool blinkerSound = false;
 
     /**
      * @brief A Function to set the current speed
@@ -114,7 +109,7 @@ protected:
     /**
      * @brief Function to draw the blinkers
      */
-    void blinker();
+    void blinker() const;
 
     /**
      * @brief Function to draw the disconnect warning
