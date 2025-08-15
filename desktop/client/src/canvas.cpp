@@ -104,6 +104,13 @@ static int current_battery = 0;
 static int max_battery = SETTINGS["battery"].max;
 static int min_battery = SETTINGS["battery"].min;
 
+// Blinkers Settings
+static constexpr auto right_light_ui = QPointF(580.0f, 90.0f);
+static constexpr auto right_light_icon = QChar(0xe5c8);
+
+static constexpr auto left_light_ui = QPointF(60.0f, 90.0f);
+static constexpr auto left_light_icon = QChar(0xe5c4);
+
 // Helper angles
 static QPointF center;
 static QPointF arc_center;
@@ -451,19 +458,14 @@ void Canvas::blinker() const {
 
     const QColor color = (phase_on <= (blink_period / 2)) ? Qt::green : Qt::transparent;
 
-    if (blinker_position == 1) {
-        // right blinker
-        painter->setPen(color);
-        painter->drawText(QPointF(580.0f, 90.0f), QChar(0xe5c8));
-    } else if (blinker_position == 2) {
-        // left blinker
-        painter->setPen(color);
-        painter->drawText(QPointF(60.0f, 90.0f), QChar(0xe5c4));
-    } else if (blinker_position == 3) {
-        // warning lights
-        painter->setPen(color);
-        painter->drawText(QPointF(580.0f, 90.0f), QChar(0xe5c8));
-        painter->drawText(QPointF(60.0f, 90.0f), QChar(0xe5c4));
+    painter->setPen(color);
+    if (blinker_position == RIGHT_LIGHT) {
+        painter->drawText(right_light_ui, right_light_icon);
+    } else if (blinker_position == LEFT_LIGHT) {
+        painter->drawText(left_light_ui, left_light_icon);
+    } else if (blinker_position == HAZARD_LIGHT) {
+        painter->drawText(right_light_ui, right_light_icon);
+        painter->drawText(left_light_ui, left_light_icon);
     } else {
         // off
     }
