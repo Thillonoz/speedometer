@@ -7,14 +7,6 @@
 #include <QCoreApplication>
 #include <QDir>
 
-// Blinkers
-enum Blinker {
-    OFF = 0,
-    RIGHT_LIGHT = 1,
-    LEFT_LIGHT = 2,
-    HAZARD_LIGHT = 3
-};
-
 // Include Settngs
 static Setting::Signal &SETTINGS{Setting::Signal::handle()};
 
@@ -105,6 +97,9 @@ static int max_battery = SETTINGS["battery"].max;
 static int min_battery = SETTINGS["battery"].min;
 
 // Blinkers Settings
+static int _left_blinker{false};
+static int _right_blinker{false};
+
 static constexpr auto right_light_ui = QPointF(580.0f, 90.0f);
 static constexpr auto right_light_icon = QChar(0xe5c8);
 
@@ -121,8 +116,6 @@ static float radius;
 
 static float current_angle_deg = qDegreesToRadians(static_cast<float>(circle_end_angle + line_offset_angle));
 static float target_angle_deg = current_angle_deg;
-
-static int blinker_position = 0;
 
 // Sound Settings
 static QString soundPath = "sound.wav";
@@ -175,15 +168,8 @@ void Canvas::update_all(const int speed, const int temperature, const int batter
     set_temperature(temperature);
     set_battery(battery);
 
-    if (left_blinker && right_blinker) {
-        set_blinker(HAZARD_LIGHT);
-    } else if (left_blinker) {
-        set_blinker(LEFT_LIGHT);
-    } else if (right_blinker) {
-        set_blinker(RIGHT_LIGHT);
-    } else {
-        set_blinker(OFF);
-    }
+    _left_blinker = left_blinker;
+    _right_blinker = right_blinker;
 
     is_connected(connected);
 
@@ -446,41 +432,38 @@ void Canvas::show_battery() {
     painter->drawText(text_rect, Qt::AlignCenter, QString::number(current_battery_fill) + QString("%"));
 }
 
-void Canvas::blinker() const {
-    constexpr int blink_period{16};
+void Canvas::blinker() {
     static int phase_on{0};
-
-    phase_on = (phase_on + 1) % (blink_period + 1);
 
     QFont iconFont = painter->font();
     iconFont.setPointSize(60);
     painter->setFont(iconFont);
 
-    const QColor color = (phase_on <= (blink_period / 2)) ? Qt::green : Qt::transparent;
+    if (_left_blinker || _right_blinker) {
+        constexpr int blink_period{16};
 
-    painter->setPen(color);
-    if (blinker_position == RIGHT_LIGHT) {
-        painter->drawText(right_light_ui, right_light_icon);
-    } else if (blinker_position == LEFT_LIGHT) {
-        painter->drawText(left_light_ui, left_light_icon);
-    } else if (blinker_position == HAZARD_LIGHT) {
-        painter->drawText(right_light_ui, right_light_icon);
-        painter->drawText(left_light_ui, left_light_icon);
-    } else {
-        // off
-    }
-}
+        phase_on = (phase_on + 1) % (blink_period + 1);
 
-void Canvas::playBlinkerSound(const bool _isActive) {
-    if (_isActive) {
         if ((QMediaPlayer::MediaStatus::EndOfMedia == mediaPlayer.mediaStatus()) ||
             (QMediaPlayer::PlaybackState::PlayingState != mediaPlayer.playbackState())) {
             mediaPlayer.setSource(QUrl());
             mediaPlayer.setSource(QUrl::fromLocalFile(soundPath));
-            mediaPlayer.play(); // loops infinitely due to setLoops
+            mediaPlayer.play();
+        }
+
+        const QColor color = (phase_on <= (blink_period / 2)) ? Qt::green : Qt::transparent;
+        painter->setPen(color);
+
+        if (_right_blinker) {
+            painter->drawText(right_light_ui, right_light_icon);
+        }
+
+        if (_left_blinker) {
+            painter->drawText(left_light_ui, left_light_icon);
         }
     } else {
-        mediaPlayer.stop(); // also stops positionChanged ticks
+        phase_on = 0;
+        mediaPlayer.stop();
     }
 }
 
@@ -506,12 +489,6 @@ void Canvas::set_battery(const int battery_percent) {
     current_battery = qBound(min_battery, battery_percent, max_battery);
     target_battery_fill = static_cast<float>(current_battery);
     current_battery_fill = target_battery_fill;
-}
-
-void Canvas::set_blinker(const int blinker_state) {
-    blinker_position = blinker_state;
-    playBlinkerSound(blinker_position > OFF);
-    update(); // immediate visual refresh on state change
 }
 
 void Canvas::is_connected(const bool status) {
