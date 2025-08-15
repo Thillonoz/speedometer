@@ -7,6 +7,14 @@
 #include <QCoreApplication>
 #include <QDir>
 
+// Blinkers
+enum Blinker {
+    OFF = 0,
+    RIGHT_LIGHT = 1,
+    LEFT_LIGHT = 2,
+    HAZARD_LIGHT = 3
+};
+
 // Include Settngs
 static Setting::Signal &SETTINGS{Setting::Signal::handle()};
 
@@ -110,7 +118,7 @@ static float target_angle_deg = current_angle_deg;
 static int blinker_position = 0;
 
 // Sound Settings
-static QString soundPath;
+static QString soundPath = "sound.wav";
 static constexpr float sound_max_volume = 1.0f;
 
 // Connection
@@ -126,12 +134,7 @@ Canvas::Canvas(QWidget *parent) : QWidget(parent), mediaPlayer(this), audioOutpu
     painter = nullptr;
 
     // Audio setup once
-    soundPath = QDir::cleanPath(QCoreApplication::applicationDirPath() + "/sound.wav");
-
     mediaPlayer.setAudioOutput(&audioOutput);
-    mediaPlayer.setSource(QUrl::fromLocalFile(soundPath));
-    mediaPlayer.setLoops(QMediaPlayer::Infinite);
-
     audioOutput.setVolume(sound_max_volume);
 
     current_speed = max_speed;
@@ -166,19 +169,13 @@ void Canvas::update_all(const int speed, const int temperature, const int batter
     set_battery(battery);
 
     if (left_blinker && right_blinker) {
-        if (blinker_position != 3) set_blinker(3);
+        set_blinker(HAZARD_LIGHT);
     } else if (left_blinker) {
-        if (blinker_position != 2) set_blinker(2);
+        set_blinker(LEFT_LIGHT);
     } else if (right_blinker) {
-        if (blinker_position != 1) set_blinker(1);
+        set_blinker(RIGHT_LIGHT);
     } else {
-        if (blinker_position != 0) set_blinker(0);
-    }
-
-    if (left_blinker || right_blinker) {
-        playBlinkerSound(true);
-    } else {
-        playBlinkerSound(false);
+        set_blinker(OFF);
     }
 
     is_connected(connected);
@@ -510,11 +507,9 @@ void Canvas::set_battery(const int battery_percent) {
 }
 
 void Canvas::set_blinker(const int blinker_state) {
-    if (blinker_position != blinker_state) {
-        blinker_position = blinker_state;
-        playBlinkerSound(blinker_position > 0);
-        update(); // immediate visual refresh on state change
-    }
+    blinker_position = blinker_state;
+    playBlinkerSound(blinker_position > OFF);
+    update(); // immediate visual refresh on state change
 }
 
 void Canvas::is_connected(const bool status) {
