@@ -10,7 +10,8 @@
 
 static std::mutex mutex;
 
-void UARTService::run() {
+void UARTService::run()
+{
     QSerialPort serial;
 
     serial.setPortName(port_name);
@@ -20,15 +21,23 @@ void UARTService::run() {
     serial.setStopBits(QSerialPort::OneStop);
     serial.setFlowControl(QSerialPort::NoFlowControl);
 
-    if (!serial.isOpen()) {
-        if (!serial.open(QSerialPort::WriteOnly)) {
+    if (!serial.isOpen())
+    {
+        if (!serial.open(QSerialPort::WriteOnly))
+        {
             qDebug() << "Failed to open serial port";
         }
     }
 
-    while (serial.isOpen()) {
+    while (serial.isOpen())
+    {
         mutex.lock();
         QByteArray data(reinterpret_cast<const char *>(buffer), BUFLEN);
+
+#if UART_BLE_TESTING
+        qDebug() << buffer[0] << buffer[1] << buffer[2];
+        qDebug() << data.toHex();
+#endif
 
         serial.write(data);
         serial.flush();
@@ -38,12 +47,14 @@ void UARTService::run() {
         QThread::msleep(Setting::INTERVAL);
     }
 
-    if (serial.isOpen()) {
+    if (serial.isOpen())
+    {
         serial.close();
     }
 }
 
-UARTService::~UARTService() {
+UARTService::~UARTService()
+{
     quit();
     wait();
 }
