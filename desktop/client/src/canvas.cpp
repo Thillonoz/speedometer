@@ -330,7 +330,7 @@ void Canvas::show_disconnect_warning() const {
 }
 
 int Canvas::speed_from_angle() {
-    const float angle_range = (circle_end_angle - circle_start_angle) - 2 * line_offset_angle;
+    constexpr float angle_range = (circle_end_angle - circle_start_angle) - 2 * line_offset_angle;
     const float angle_deg = qRadiansToDegrees(current_angle_deg);
     float normalized_angle = circle_end_angle - line_offset_angle - angle_deg;
 
@@ -339,9 +339,9 @@ int Canvas::speed_from_angle() {
     if (normalized_angle > angle_range)
         normalized_angle = angle_range;
 
-    float percentage = normalized_angle / angle_range;
-    int speed = static_cast<int>(percentage * max_speed);
-    return speed;
+    const float percentage = normalized_angle / angle_range;
+    const float speed = (percentage * max_speed);
+    return static_cast<int>(std::ceil(speed));
 }
 
 void Canvas::show_temperature() {
