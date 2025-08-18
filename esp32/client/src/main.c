@@ -1,78 +1,73 @@
-
+#include <stdio.h>
+#include <stdlib.h>
+#include "setting.h"
+#include "esp_log.h"
+#include "nvs_flash.h"
 #include "driver/uart.h"
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include <stdint.h>
-#include <stdbool.h>
+#include "host/ble_hs.h"
+#include "host/util/util.h"
+#include "nimble/nimble_port.h"
+#include "services/gap/ble_svc_gap.h"
+#include "nimble/nimble_port_freertos.h"
 
-// ===== Testvärden att ändra =====
-#define TEST_SPEED_VALUE 100    // 0–255
-#define TEST_BATTERY_PERCENT 10 // 0–100
-#define TEST_TEMPERATURE_C -20  // -60 till 60
-#define TEST_LEFT_INDICATOR 1   // 1 = på, 0 = av
-#define TEST_RIGHT_INDICATOR 0  // 1 = på, 0 = av
-
-#define UART_BAUDRATE 1048576
-#define SEND_INTERVAL_MS 200 // hur ofta vi skickar
-
-// Konvertera temperatur till 7-bitars two's complement [-60, 60]
-static inline uint8_t encodeTemperature7Bit(int temperatureCelsius)
-{
-    if (temperatureCelsius < -60)
-        temperatureCelsius = -60;
-    if (temperatureCelsius > 60)
-        temperatureCelsius = 60;
-    return (uint8_t)(temperatureCelsius & 0x7F);
-}
-
-// Packa data till tre bytes enligt Setting::Signal layout
-static inline void sendDataFrame(uint8_t speed,
-                                 uint8_t batteryPercent,
-                                 int temperatureCelsius,
-                                 bool leftIndicator,
-                                 bool rightIndicator)
-{
-    if (batteryPercent > 127)
-        batteryPercent = 127;
-
-    const uint8_t temp7 = encodeTemperature7Bit(temperatureCelsius);
-
-    // byte0: speed
-    const uint8_t byte0 = speed;
-    // byte1: temp[6:0] + battery bit0 (MSB)
-    const uint8_t byte1 = (uint8_t)((temp7 & 0x7F) | ((batteryPercent & 0x01) << 7));
-    // byte2: battery bit1..6 + left(bit6) + right(bit7)
-    const uint8_t byte2 = (uint8_t)(((batteryPercent >> 1) & 0x3F) | ((leftIndicator ? 1 : 0) << 6) | ((rightIndicator ? 1 : 0) << 7));
-
-    uint8_t packet[3] = {byte0, byte1, byte2};
-    uart_write_bytes(UART_NUM_0, (const char *)packet, sizeof(packet));
-}
+#include "driver/gpio.h"
 
 void app_main(void)
 {
-    // Initiera UART0 (USB till PC)
-    uart_config_t uartConfig = {
-        .baud_rate = UART_BAUDRATE,
+
+    // TEMP LED to test
+    ESP_ERROR_CHECK(gpio_reset_pin(GPIO_NUM_4));
+
+    ESP_ERROR_CHECK(gpio_set_direction(GPIO_NUM_4, GPIO_MODE_OUTPUT)); // Configure pin 4 as a digital output pin
+
+    uint32_t state = 0;
+
+    // UART config
+    uart_config_t uart_config = {
+        .baud_rate = BAUDRATE,
         .data_bits = UART_DATA_8_BITS,
-        .parity = UART_PARITY_DISABLE,
+        .parity    = UART_PARITY_DISABLE,
         .stop_bits = UART_STOP_BITS_1,
         .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
         .source_clk = UART_SCLK_DEFAULT,
     };
-    uart_driver_install(UART_NUM_0, 256, 0, 0, NULL, 0);
-    uart_param_config(UART_NUM_0, &uartConfig);
-    uart_set_pin(UART_NUM_0, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE,
-                 UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
+    ESP_ERROR_CHECK(uart_driver_install(UART, 256, 0, 0, NULL, 0));
+    ESP_ERROR_CHECK(uart_param_config(UART, &uart_config));
+    // (Optional) Set pins if needed: uart_set_pin(UART, TX, RX, RTS, CTS);
 
-    // Skicka testvärden kontinuerligt (vTaskDelay matar watchdog)
-    while (1)
-    {
-        sendDataFrame(TEST_SPEED_VALUE,
-                      TEST_BATTERY_PERCENT,
-                      TEST_TEMPERATURE_C,
-                      TEST_LEFT_INDICATOR,
-                      TEST_RIGHT_INDICATOR);
+    // Example test values
+    uint8_t speed = 120;         // 0–240
+    int8_t temperature = 25;     // -60–60
+    uint8_t battery = 80;        // 0–100
+    uint8_t left = 1;            // on
+    uint8_t right = 0;           // off
 
-        vTaskDelay(pdMS_TO_TICKS(SEND_INTERVAL_MS));
+    uint8_t temp_enc = (uint8_t)(temperature + 60); // offset for signed
+
+    uint32_t packed = 0;
+    packed |= ((uint32_t)speed & 0xFF) << 0;           // bits 0-7
+    packed |= ((uint32_t)temp_enc & 0x7F) << 8;        // bits 8-14
+    packed |= ((uint32_t)battery & 0x7F) << 15;        // bits 15-21
+    packed |= ((uint32_t)left & 0x01) << 22;           // bit 22
+    packed |= ((uint32_t)right & 0x01) << 23;          // bit 23
+
+    uint8_t buffer[BUFLEN];
+    buffer[0] = (packed >> 0) & 0xFF;
+    buffer[1] = (packed >> 8) & 0xFF;
+    buffer[2] = (packed >> 16) & 0xFF;
+
+    while (1) {
+
+        int written = uart_write_bytes(UART, (const char*)buffer, BUFLEN);
+        if (written == BUFLEN)
+        {
+            state = !state;
+            ESP_ERROR_CHECK(gpio_set_level(GPIO_NUM_4, state));
+
+            vTaskDelay(pdMS_TO_TICKS(500));
+        }
+
+        vTaskDelay(pdMS_TO_TICKS(INTERVAL));
     }
+
 }

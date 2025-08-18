@@ -3,71 +3,51 @@
 #include <QSerialPort>
 #include "uartservice.h"
 
-void UARTService::run()
-{
-    QSerialPort serial;
+#include <iostream>
 
-    serial.setPortName(port_name);
+void UARTService::run(void)
+{
+
+    serial.setPortName("/dev/ttyUSB1");
     serial.setBaudRate(BAUDRATE);
     serial.setDataBits(QSerialPort::Data8);
     serial.setParity(QSerialPort::NoParity);
     serial.setStopBits(QSerialPort::OneStop);
     serial.setFlowControl(QSerialPort::NoFlowControl);
 
-    if (!serial.open(QSerialPort::ReadOnly))
+    if (!serial.open(QIODevice::ReadOnly))
     {
-        qDebug() << "Failed to open client serial port";
+        qWarning() << "Faled to open serial port";
+        status = false;
         return;
     }
+    status = true;
 
-    QByteArray rx;
-    rx.reserve(BUFLEN * 2);
+    uint8_t temp[sizeof(buffer)]{0};
 
-    while (serial.isOpen())
+    while (status)
     {
-
-        if (serial.waitForReadyRead(50))
+        qint64 bytesRead = serial.read(reinterpret_cast<char *>(temp), sizeof(temp));
+        if (bytesRead != sizeof(temp))
         {
-            rx += serial.readAll();
-
-            while (serial.waitForReadyRead(2))
-                rx += serial.readAll();
-
-            if (rx.size() >= BUFLEN)
-            {
-                // Copy latest BUFLEN bytes into COMService::buffer (thread-safe)
-                mtx.lock();
-
-                for (int i = 0; i < BUFLEN; ++i)
-                    buffer[i] = static_cast<uint8_t>(rx.at(rx.size() - BUFLEN + i));
-                mtx.unlock();
-
-                // Keep memory bounded
-                rx = rx.right(BUFLEN);
-
-                status = true; // mark as “connected/receiving”
-            }
+            status = false;
+            break;
         }
         else
         {
-            QThread::msleep(2); // tiny breather when idle
+            std::scoped_lock<std::mutex> locker{mtx};
+            std::memcpy(buffer, temp, sizeof(buffer));
         }
 
-        if (serial.error() == QSerialPort::ResourceError)
-        {
-            qDebug() << "Serial resource error:" << serial.errorString();
-            break;
-        }
+        std::cout << "Speed: " << getSpeed()
+                  << "\nTemperature: " << getTemperature()
+                  << "\nBattery: " << getBatteryLevel()
+                  << "\nLeft: " << getLeftLight()
+                  << "\nRight: " << getRightLight() << std::endl;
+
+        msleep(Setting::INTERVAL);
     }
 
-    if (serial.isOpen())
-        serial.close();
-
+    serial.close();
     status = false;
-}
-
-UARTService::~UARTService()
-{
-    quit();
-    wait();
 }
