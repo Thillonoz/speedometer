@@ -5,18 +5,13 @@
 #include <QWidget>
 #include <QMediaPlayer>
 #include <QAudioOutput>
-#include <QTimer>
 
-class Canvas : public QWidget
-{
+class Canvas : public QWidget {
     QPainter *painter{};
 
 private:
     QMediaPlayer mediaPlayer;
     QAudioOutput audioOutput;
-    QTimer blinkTimer;
-    bool blinkVisible = false;
-    bool blinkerSound = false;
 
     /**
      * @brief A Function to set the current speed
@@ -38,20 +33,6 @@ private:
      * @param battery_percent The current battery
      */
     static void set_battery(int battery_percent);
-
-    /**
-     * @brief Function to turn on [left, right, warning] blinkers or off
-     *
-     * @param blinker_state The state of the blinker, ether on [left, right, warning] or off
-     */
-    void set_blinker(int blinker_state);
-
-    /**
-     * @brief Plays blinker sound effect.
-     *
-     * @param _isActive True if the blinker is active, false to stop the sound.
-     */
-    void playBlinkerSound(bool _isActive);
 
     /**
      * @brief Function to display the disconnect warning
