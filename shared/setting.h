@@ -66,6 +66,8 @@ namespace Setting
 
 #include <stdint.h>
 
+#define UART UART_NUM_0
+
 typedef struct
 {
     int length;

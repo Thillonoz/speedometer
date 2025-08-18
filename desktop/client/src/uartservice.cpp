@@ -14,13 +14,10 @@ void UARTService::run()
     serial.setStopBits(QSerialPort::OneStop);
     serial.setFlowControl(QSerialPort::NoFlowControl);
 
-    if (!serial.isOpen())
+    if (!serial.open(QSerialPort::ReadOnly))
     {
-        if (!serial.open(QSerialPort::ReadOnly))
-        { // RECEIVE-ONLY
-            qDebug() << "Failed to open client serial port";
-            return;
-        }
+        qDebug() << "Failed to open client serial port";
+        return;
     }
 
     QByteArray rx;
@@ -36,22 +33,20 @@ void UARTService::run()
             while (serial.waitForReadyRead(2))
                 rx += serial.readAll();
 
-            // Copy latest BUFLEN bytes into COMService::buffer (thread-safe)
-            mtx.lock();
-            int take = rx.size() < BUFLEN ? rx.size() : BUFLEN;
-            int start = rx.size() - take;
+            if (rx.size() >= BUFLEN)
+            {
+                // Copy latest BUFLEN bytes into COMService::buffer (thread-safe)
+                mtx.lock();
 
-            for (int i = 0; i < take; ++i)
-                buffer[i] = static_cast<uint8_t>(rx.at(start + i));
-            for (int i = take; i < BUFLEN; ++i)
-                buffer[i] = 0;
-            mtx.unlock();
+                for (int i = 0; i < BUFLEN; ++i)
+                    buffer[i] = static_cast<uint8_t>(rx.at(rx.size() - BUFLEN + i));
+                mtx.unlock();
 
-            // Keep memory bounded
-            if (rx.size() > BUFLEN * 2)
+                // Keep memory bounded
                 rx = rx.right(BUFLEN);
 
-            status = true; // mark as “connected/receiving”
+                status = true; // mark as “connected/receiving”
+            }
         }
         else
         {
