@@ -8,6 +8,7 @@
 void UARTService::run(void)
 {
 
+    QSerialPort serial;
     serial.setPortName("/dev/ttyUSB1");
     serial.setBaudRate(BAUDRATE);
     serial.setDataBits(QSerialPort::Data8);
@@ -17,7 +18,7 @@ void UARTService::run(void)
 
     if (!serial.open(QIODevice::ReadOnly))
     {
-        qWarning() << "Faled to open serial port";
+        qDebug() << "Faled to open serial port";
         status = false;
         return;
     }
@@ -48,6 +49,15 @@ void UARTService::run(void)
         msleep(Setting::INTERVAL);
     }
 
-    serial.close();
+    if (serial.isOpen())
+    {
+        serial.close();
+    }
     status = false;
+}
+
+UARTService::~UARTService()
+{
+    quit();
+    wait();
 }

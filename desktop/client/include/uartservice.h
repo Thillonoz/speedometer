@@ -6,20 +6,17 @@
 
 #include <QSerialPort>
 
-class UARTService : public COMService, public QThread {
-
-    QSerialPort serial;
+class UARTService : public COMService, public QThread
+{
 
     void run(void) override;
 
 public:
-    UARTService() = default;
-    ~UARTService() {
-        if (serial.isOpen())
-        {
-            serial.close();
-        }
-    }        
+    UARTService()
+    {
+        QMetaObject::invokeMethod(this, "start", Qt::QueuedConnection);
+    };
+    ~UARTService();
 };
 
 #endif
