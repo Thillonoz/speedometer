@@ -35,39 +35,23 @@ void app_main(void)
     ESP_ERROR_CHECK(uart_param_config(UART, &uart_config));
     // (Optional) Set pins if needed: uart_set_pin(UART, TX, RX, RTS, CTS);
 
-    // Example test values
-    uint8_t speed = 120;         // 0–240
-    int8_t temperature = 25;     // -60–60
-    uint8_t battery = 80;        // 0–100
-    uint8_t left = 1;            // on
-    uint8_t right = 0;           // off
-
-    uint8_t temp_enc = (uint8_t)(temperature + 60); // offset for signed
-
-    uint32_t packed = 0;
-    packed |= ((uint32_t)speed & 0xFF) << 0;           // bits 0-7
-    packed |= ((uint32_t)temp_enc & 0x7F) << 8;        // bits 8-14
-    packed |= ((uint32_t)battery & 0x7F) << 15;        // bits 15-21
-    packed |= ((uint32_t)left & 0x01) << 22;           // bit 22
-    packed |= ((uint32_t)right & 0x01) << 23;          // bit 23
-
     uint8_t buffer[BUFLEN];
-    buffer[0] = (packed >> 0) & 0xFF;
-    buffer[1] = (packed >> 8) & 0xFF;
-    buffer[2] = (packed >> 16) & 0xFF;
+    
+    // see settings for bits placement
+    buffer[0] = 0b00010100; // 20 (speed)
+    buffer[1] = 0b10000001; // 1 and 1 (battery and temperature)
+    buffer[2] = 0b11000000; // true and true (light)
 
     while (1) {
-
-        int written = uart_write_bytes(UART, (const char*)buffer, BUFLEN);
+        int written = uart_write_bytes(UART, buffer, BUFLEN);
         if (written == BUFLEN)
         {
             state = !state;
             ESP_ERROR_CHECK(gpio_set_level(GPIO_NUM_4, state));
-
-            vTaskDelay(pdMS_TO_TICKS(500));
         }
 
         vTaskDelay(pdMS_TO_TICKS(INTERVAL));
+        fflush(stdout);
     }
 
 }

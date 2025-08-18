@@ -22,29 +22,35 @@ void UARTService::run(void)
         status = false;
         return;
     }
+    qDebug() << "Serial port opened successfully";
     status = true;
 
     uint8_t temp[sizeof(buffer)]{0};
 
     while (status)
     {
-        qint64 bytesRead = serial.read(reinterpret_cast<char *>(temp), sizeof(temp));
-        if (bytesRead != sizeof(temp))
-        {
-            status = false;
-            break;
-        }
-        else
-        {
-            std::scoped_lock<std::mutex> locker{mtx};
-            std::memcpy(buffer, temp, sizeof(buffer));
-        }
 
-        std::cout << "Speed: " << getSpeed()
-                  << "\nTemperature: " << getTemperature()
-                  << "\nBattery: " << getBatteryLevel()
-                  << "\nLeft: " << getLeftLight()
-                  << "\nRight: " << getRightLight() << std::endl;
+        if (serial.waitForReadyRead(Setting::INTERVAL))
+        {
+            qint64 bytesRead = serial.read(reinterpret_cast<char *>(temp), sizeof(temp));
+            if (bytesRead != BUFLEN)
+            {
+                qDebug() << "dies, not match expected size | " << bytesRead;
+            }
+            else
+            {
+                std::scoped_lock<std::mutex> locker{mtx};
+                std::memcpy(buffer, temp, sizeof(buffer));
+            }
+
+            qDebug() << temp[0] << temp[1] << temp[2];
+            qDebug() << buffer[0] << buffer[1] << buffer[2];
+            qDebug() << "Speed: " << getSpeed()
+                     << "\nTemperature: " << getTemperature()
+                     << "\nBattery: " << getBatteryLevel()
+                     << "\nLeft: " << getLeftLight()
+                     << "\nRight: " << getRightLight();
+        }
 
         msleep(Setting::INTERVAL);
     }
@@ -58,6 +64,7 @@ void UARTService::run(void)
 
 UARTService::~UARTService()
 {
+    status = false;
     quit();
     wait();
 }
