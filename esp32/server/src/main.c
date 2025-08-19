@@ -21,7 +21,8 @@
 #include "freertos/task.h"
 #include <unistd.h>
 
-#define LED_GPIO GPIO_NUM_4
+#define LED_GPIO4 GPIO_NUM_4
+#define LED_GPIO5 GPIO_NUM_5
 
 void tempstart(void)
 {
@@ -29,52 +30,41 @@ void tempstart(void)
 
     ESP_LOGI(TAG, "Configuring GPIO...");
 
-    gpio_reset_pin(LED_GPIO);
-    gpio_config_t io_conf = {.pin_bit_mask = (1ULL << LED_GPIO),
+    gpio_reset_pin(LED_GPIO4);
+    gpio_config_t io_conf = {.pin_bit_mask = (1ULL << LED_GPIO4),
                              .mode = GPIO_MODE_OUTPUT,
                              .pull_up_en = GPIO_PULLUP_DISABLE,
                              .pull_down_en = GPIO_PULLDOWN_DISABLE,
                              .intr_type = GPIO_INTR_DISABLE};
 
     ESP_ERROR_CHECK(gpio_config(&io_conf));
+
+    gpio_reset_pin(LED_GPIO5);
+    gpio_config_t io_conf_2 = {.pin_bit_mask = (1ULL << LED_GPIO5),
+                             .mode = GPIO_MODE_OUTPUT,
+                             .pull_up_en = GPIO_PULLUP_DISABLE,
+                             .pull_down_en = GPIO_PULLDOWN_DISABLE,
+                             .intr_type = GPIO_INTR_DISABLE};
+
+    ESP_ERROR_CHECK(gpio_config(&io_conf_2));
 }
 
 void tempCheck(uint8_t *_buffer, uint8_t _bool)
 {
     if (_bool == true)
     {
-        if (_buffer[0] == 0b00000001)
-        { // speed
-            gpio_set_level(LED_GPIO, 1);
-        }
-        else if (_buffer[1] == 0b00000001)
-        { // temperature
-            gpio_set_level(LED_GPIO, 1);
-        }
-        else if (_buffer[1] == 0b10000000)
-        { // battery
-            gpio_set_level(LED_GPIO, 1);
-        }
-        else if (_buffer[2] == 0b01000000)
-        { // left blinker
-            gpio_set_level(LED_GPIO, 1);
-        }
-        else if (_buffer[2] == 0b10000000)
-        { // right blinker
-            gpio_set_level(LED_GPIO, 1);
-        }
-        else if (_buffer[2] == 0b11000000)
-        { // warning blinker
-            gpio_set_level(LED_GPIO, 1);
+        if (_buffer[0] == 0b00000001 || _buffer[1] == 0b00000001 || _buffer[1] == 0b10000000 ||
+          _buffer[2] == 0b01000000 || _buffer[2] == 0b10000000 || _buffer[2] == 0b11000000) {
+          gpio_set_level(LED_GPIO4, 1);
         }
         else
         {
-            gpio_set_level(LED_GPIO, 0);
+            gpio_set_level(LED_GPIO4, 0);
         }
     }
     else
     {
-        gpio_set_level(LED_GPIO, 1);
+        gpio_set_level(LED_GPIO4, 1);
     }
 }
 #endif
@@ -101,8 +91,8 @@ static uint16_t conn_handle_global = BLE_HS_CONN_HANDLE_NONE;
 
 // For random static address, 2 MSB bits of the first byte shall be 0b11.
 // I.e. addr[5] shall be in the range of 0xC0 to 0xFF
-static const uint8_t server_addr[] = {0x01, 0x02, 0x03, 0x04, 0x05, 0xC0};
-static const uint8_t client_addr[] = {0x10, 0x20, 0x30, 0x40, 0x50, 0xC0};
+static const uint8_t server_addr[] = {0x01, 0x04, 0x03, 0x04, 0x05, 0xC0};
+static const uint8_t client_addr[] = {0x10, 0x40, 0x30, 0x40, 0x50, 0xC0};
 
 // Setting::INTERVAL, change when setting is updated.
 static const int INTERVAL = 40;
@@ -318,12 +308,19 @@ static int service_gatt_handler(uint16_t conn_handle, uint16_t attr_handle,
     case BLE_GATT_ACCESS_OP_READ_CHR:
     {
         ESP_LOGI(TAG, "Callback for read");
+#ifdef UART_BLE_TESTING
+        gpio_set_level(LED_GPIO5, 1);
+#endif
+        fflush(stdout);
         int rc = os_mbuf_append(ctxt->om, buffer, sizeof(buffer));
         if (rc != 0)
         {
             ESP_LOGE(TAG, "Error appending data to mbuf");
             // return BLE_ATT_ERR_INSUFFICIENT_RES;
         }
+#ifdef UART_BLE_TESTING
+        gpio_set_level(LED_GPIO5, 0);
+#endif
     }
 
     break;
@@ -401,9 +398,9 @@ void uart_ble_task(void *arg)
 #endif
             ESP_LOGE(TAG, "Error in receiving data from UART");
 
-            buffer[0] = 0x16; // Default value if no data received
-            buffer[1] = 0x12; // Default value if no data received
-            buffer[2] = 0x29; // Default value if no data received
+            buffer[0] = 0x69; // Default value if no data received
+            buffer[1] = 0x89; // Default value if no data received
+            buffer[2] = 0xd9; // Default value if no data received
         }
         vTaskDelay(pdMS_TO_TICKS(INTERVAL));
     }
