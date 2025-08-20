@@ -49,22 +49,22 @@ void tempstart(void)
     ESP_ERROR_CHECK(gpio_config(&io_conf_2));
 }
 
-void tempCheck(uint8_t *_buffer, uint8_t _bool)
+void tempBitCheck(int _gpio_pin, uint8_t *_buffer, uint8_t _bool)
 {
     if (_bool == true)
     {
         if (_buffer[0] == 0b00000001 || _buffer[1] == 0b00000001 || _buffer[1] == 0b10000000 ||
           _buffer[2] == 0b01000000 || _buffer[2] == 0b10000000 || _buffer[2] == 0b11000000) {
-          gpio_set_level(LED_GPIO4, 1);
+          gpio_set_level(_gpio_pin, 1);
         }
         else
         {
-            gpio_set_level(LED_GPIO4, 0);
+            gpio_set_level(_gpio_pin, 0);
         }
     }
     else
     {
-        gpio_set_level(LED_GPIO4, 1);
+        gpio_set_level(_gpio_pin, 1);
     }
 }
 #endif
@@ -386,7 +386,7 @@ void uart_ble_task(void *arg)
         if (len == MSGLEN)
         {
 #ifdef UART_BLE_TESTING
-            tempCheck((uint8_t *)buffer, true);
+            tempBitCheck(LED_GPIO4,(uint8_t *)buffer, true);
 #endif
             struct os_mbuf *om = ble_hs_mbuf_from_flat(buffer, len);
             ble_gatts_notify_custom(conn_handle_global, ble_svc_gatt_read_val_handle, om);
@@ -394,7 +394,7 @@ void uart_ble_task(void *arg)
         else
         {
 #ifdef UART_BLE_TESTING
-            tempCheck((uint8_t *)buffer, false);
+            tempBitCheck(LED_GPIO4,(uint8_t *)buffer, false);
 #endif
             ESP_LOGE(TAG, "Error in receiving data from UART");
 
