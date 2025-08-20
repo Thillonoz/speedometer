@@ -4,7 +4,21 @@
 #include <QThread>
 #include "comservice.h"
 
-class UARTService : public COMService, public QThread {
+#include <QSerialPort>
+
+class UARTService : public COMService, public QThread
+{
+    const QString serial_name = UART_CPORT;
+
+private:
+    void run(void) override;
+
+public:
+    UARTService()
+    {
+        QMetaObject::invokeMethod(this, "start", Qt::QueuedConnection);
+    };
+    ~UARTService();
 };
 
 #endif
