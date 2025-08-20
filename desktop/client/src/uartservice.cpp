@@ -7,56 +7,70 @@
 
 void UARTService::run(void)
 {
-
     QSerialPort serial;
-    serial.setPortName("/dev/ttyUSB1");
+    serial.setPortName(serial_name);
     serial.setBaudRate(BAUDRATE);
     serial.setDataBits(QSerialPort::Data8);
     serial.setParity(QSerialPort::NoParity);
     serial.setStopBits(QSerialPort::OneStop);
     serial.setFlowControl(QSerialPort::NoFlowControl);
 
-    if (!serial.open(QIODevice::ReadOnly))
+    while (true)
     {
-        qDebug() << "Faled to open serial port";
-        status = false;
-        return;
-    }
-    qDebug() << "Serial port opened successfully";
-    status = true;
-
-    uint8_t temp[sizeof(buffer)]{0};
-
-    while (status)
-    {
-
-        if (serial.waitForReadyRead(Setting::INTERVAL))
+        if (!serial.open(QIODevice::ReadOnly))
         {
-            qint64 bytesRead = serial.read(reinterpret_cast<char *>(temp), sizeof(temp));
-            if (bytesRead != BUFLEN)
-            {
-                qDebug() << "dies, not match expected size | " << bytesRead;
-            }
-            else
-            {
-                std::scoped_lock<std::mutex> locker{mtx};
-                std::memcpy(buffer, temp, sizeof(buffer));
-            }
-
-            qDebug() << temp[0] << temp[1] << temp[2];
-            qDebug() << buffer[0] << buffer[1] << buffer[2];
-            qDebug() << "Speed: " << getSpeed()
-                     << "\nTemperature: " << getTemperature()
-                     << "\nBattery: " << getBatteryLevel()
-                     << "\nLeft: " << getLeftLight()
-                     << "\nRight: " << getRightLight();
+            qDebug() << "Failed to open serial port";
+            status = false;
+            QThread::msleep(Setting::INTERVAL);
+            continue;
         }
 
-        msleep(Setting::INTERVAL);
+        qDebug() << "Serial port opened successfully";
+        status = true;
+
+        uint8_t temp[sizeof(buffer)]{0};
+
+        while (status)
+        {
+            QSerialPort::SerialPortError e = serial.error();
+            if (e != QSerialPort::NoError)
+            {
+                serial.clear(QSerialPort::AllDirections);
+                serial.setDataTerminalReady(false);
+                serial.setRequestToSend(false);
+                serial.close();
+
+                status = false;
+                break;
+            }
+
+            if (serial.waitForReadyRead(Setting::INTERVAL))
+            {
+                qint64 bytesRead = serial.read(reinterpret_cast<char *>(temp), sizeof(temp));
+                if (bytesRead != BUFLEN)
+                {
+                    qDebug() << "dies, not match expected size | " << bytesRead;
+                    status = false;
+                    break;
+                }
+                else
+                {
+                    std::scoped_lock<std::mutex> locker{mtx};
+                    std::memcpy(buffer, temp, sizeof(buffer));
+                }
+
+                serial.flush();
+            }
+
+            msleep(Setting::INTERVAL);
+        }
     }
 
     if (serial.isOpen())
     {
+        serial.clear(QSerialPort::AllDirections);
+        serial.setDataTerminalReady(false);
+        serial.setRequestToSend(false);
         serial.close();
     }
     status = false;
@@ -65,6 +79,7 @@ void UARTService::run(void)
 UARTService::~UARTService()
 {
     status = false;
+
     quit();
     wait();
 }
