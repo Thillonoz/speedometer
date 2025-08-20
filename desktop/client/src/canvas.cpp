@@ -2,10 +2,10 @@
 #include "setting.h"
 
 #include <QtMath>
-#include <QTimer>
 #include <QFont>
 #include <QPainter>
-#include <QTime>
+#include <QCoreApplication>
+#include <QDir>
 
 // Include Settngs
 static Setting::Signal &SETTINGS{Setting::Signal::handle()};
@@ -96,6 +96,16 @@ static int current_battery = 0;
 static int max_battery = SETTINGS["battery"].max;
 static int min_battery = SETTINGS["battery"].min;
 
+// Blinkers Settings
+static int _left_blinker{false};
+static int _right_blinker{false};
+
+static constexpr auto right_light_ui = QPointF(580.0f, 90.0f);
+static constexpr auto right_light_icon = QChar(0xe5c8);
+
+static constexpr auto left_light_ui = QPointF(60.0f, 90.0f);
+static constexpr auto left_light_icon = QChar(0xe5c4);
+
 // Helper angles
 static QPointF center;
 static QPointF arc_center;
@@ -107,7 +117,9 @@ static float radius;
 static float current_angle_deg = qDegreesToRadians(static_cast<float>(circle_end_angle + line_offset_angle));
 static float target_angle_deg = current_angle_deg;
 
-static int blinker_position = 0;
+// Sound Settings
+static QString soundPath = "sound.wav";
+static constexpr float sound_max_volume = 1.0f;
 
 // Connection
 static constexpr float disconnect_icon_size = 80.0f;
@@ -115,33 +127,30 @@ static constexpr float disconnect_font_size = 50.0f;
 
 static bool current_connection_status = false; // True if connected, false if not
 
-Canvas::Canvas(QWidget *parent) {
-    // Setup Window Size
+Canvas::Canvas(QWidget *parent) : QWidget(parent), mediaPlayer(this), audioOutput(this) {
     setParent(parent);
     setFixedSize(800 - offset, 600 - offset);
 
-    painter = nullptr; // Init painter
+    painter = nullptr;
 
-    current_speed = max_speed; // Set current speed to max speed
+    // Audio setup once
+    mediaPlayer.setAudioOutput(&audioOutput);
+    audioOutput.setVolume(sound_max_volume);
 }
 
 void Canvas::paintEvent(QPaintEvent *event) {
     Q_UNUSED(event);
 
-    // Setup Painter
     QPainter localPainter(this);
     painter = &localPainter;
     painter->setRenderHints(QPainter::Antialiasing, true);
 
-    // Calculate height, width and diameter
     _h = static_cast<float>(this->height());
     _w = _h;
     _d = qMin(_w, _h) + 100;
 
     radius = _d / 2.0f;
-    center = QPointF(_w / 2.0f, _h / 2.0f); // Get the center of the CANVAS screen
-
-    // Call all draw functions
+    center = QPointF(_w / 2.0f, _h / 2.0f);
     draw_circle();
     draw_speed(start_angle);
     show_needle_speed();
@@ -157,14 +166,8 @@ void Canvas::update_all(const int speed, const int temperature, const int batter
     set_temperature(temperature);
     set_battery(battery);
 
-    if (left_blinker && right_blinker)
-        set_blinker(3);
-    else if (left_blinker)
-        set_blinker(2);
-    else if (right_blinker)
-        set_blinker(1);
-    else
-        set_blinker(0);
+    _left_blinker = left_blinker;
+    _right_blinker = right_blinker;
 
     is_connected(connected);
 
@@ -296,7 +299,7 @@ void Canvas::show_text_speed() const {
         speed_text_size_h);
 
     painter->drawText(icon_rect, Qt::AlignCenter, speed_icon);
-    painter->drawText(text_rect, Qt::AlignCenter, QString::number(speed_from_angle()) + QString(" km/h"));
+    painter->drawText(text_rect, Qt::AlignCenter, QString::number(current_speed) + QString(" km/h"));
 }
 
 void Canvas::show_disconnect_warning() const {
@@ -322,21 +325,6 @@ void Canvas::show_disconnect_warning() const {
     painter->drawText(icon_rect, Qt::AlignCenter, disconnect_icon);
     painter->setFont(font_icon);
     painter->drawText(text_rect, Qt::AlignCenter, QString("Connection Error!"));
-}
-
-int Canvas::speed_from_angle() {
-    const float angle_range = (circle_end_angle - circle_start_angle) - 2 * line_offset_angle;
-    const float angle_deg = qRadiansToDegrees(current_angle_deg);
-    float normalized_angle = circle_end_angle - line_offset_angle - angle_deg;
-
-    if (normalized_angle < 0)
-        normalized_angle = 0;
-    if (normalized_angle > angle_range)
-        normalized_angle = angle_range;
-
-    float percentage = normalized_angle / angle_range;
-    int speed = static_cast<int>(percentage * max_speed);
-    return speed;
 }
 
 void Canvas::show_temperature() {
@@ -428,37 +416,37 @@ void Canvas::show_battery() {
 }
 
 void Canvas::blinker() {
+    static int phase_on{0};
+
     QFont iconFont = painter->font();
     iconFont.setPointSize(60);
     painter->setFont(iconFont);
-    QColor color = Qt::white;
-    int ms;
 
-    if (blinker_position == 1) // right blinker
-    {
-        ms = QTime::currentTime().msec();
+    if (_left_blinker || _right_blinker) {
+        constexpr int blink_period{16};
 
-        color = (ms < 500) ? Qt::green : Qt::transparent;
+        phase_on = (phase_on + 1) % (blink_period + 1);
+
+        if ((QMediaPlayer::MediaStatus::EndOfMedia == mediaPlayer.mediaStatus()) ||
+            (QMediaPlayer::PlaybackState::PlayingState != mediaPlayer.playbackState())) {
+            mediaPlayer.setSource(QUrl());
+            mediaPlayer.setSource(QUrl::fromLocalFile(soundPath));
+            mediaPlayer.play();
+        }
+
+        const QColor color = (phase_on <= (blink_period / 2)) ? Qt::green : Qt::transparent;
         painter->setPen(color);
-        painter->drawText(QPointF(580.0f, 90.0f), QChar(0xe5c8));
-    } else if (blinker_position == 2) // left blinker
-    {
-        ms = QTime::currentTime().msec();
 
-        color = (ms < 500) ? Qt::green : Qt::transparent;
-        painter->setPen(color);
-        painter->drawText(QPointF(60.0f, 90.0f), QChar(0xe5c4));
-    } else if (blinker_position == 3) // warning lights
-    {
-        ms = QTime::currentTime().msec();
-        color = (ms < 500) ? Qt::green : Qt::transparent;
-        painter->setPen(color);
-        painter->drawText(QPointF(580.0f, 90.0f), QChar(0xe5c8));
+        if (_right_blinker) {
+            painter->drawText(right_light_ui, right_light_icon);
+        }
 
-        painter->drawText(QPointF(60.0f, 90.0f), QChar(0xe5c4));
-    } else // no blinker
-    {
-        color = Qt::transparent;
+        if (_left_blinker) {
+            painter->drawText(left_light_ui, left_light_icon);
+        }
+    } else {
+        phase_on = 0;
+        mediaPlayer.stop();
     }
 }
 
@@ -473,6 +461,7 @@ void Canvas::set_speed(int speed) {
     const float angle_deg = circle_end_angle - line_offset_angle - (percentage * angle_range);
     target_angle_deg = qDegreesToRadians(angle_deg);
 
+    current_speed = speed;
     current_angle_deg = target_angle_deg;
 }
 
@@ -484,10 +473,6 @@ void Canvas::set_battery(const int battery_percent) {
     current_battery = qBound(min_battery, battery_percent, max_battery);
     target_battery_fill = static_cast<float>(current_battery);
     current_battery_fill = target_battery_fill;
-}
-
-void Canvas::set_blinker(const int blinker_state) {
-    blinker_position = blinker_state;
 }
 
 void Canvas::is_connected(const bool status) {

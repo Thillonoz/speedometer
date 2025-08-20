@@ -4,8 +4,6 @@
 #define BAUDRATE 1048576
 #define BUFLEN 3
 
-#ifdef __cplusplus
-
 #define SIGNAL_LIST {                     \
     {{8, 0, 0, 240}, "speed"},            \
     {{7, 8, -60, 60}, "temperature"},     \
@@ -13,6 +11,8 @@
     {{1, 22, 0, 1}, "left_turn_signal"},  \
     {{1, 23, 0, 1}, "right_turn_signal"}, \
 }
+#ifdef __cplusplus
+
 
 #include <map>
 #include <tuple>
@@ -62,6 +62,40 @@ namespace Setting
         constexpr char IP[]{"127.0.0.1"};
     }
 }
+#else
+
+#include <stdint.h>
+
+#define UART UART_NUM_0
+
+typedef struct
+{
+    int length;
+    int start;
+    int min;
+    int max;
+} signal_value_t;
+
+typedef struct
+{
+    signal_value_t value;
+    const char *name;
+} signal_entry_t;
+
+static const signal_entry_t signal_table[] = SIGNAL_LIST;
+
+#undef SIGNAL_LIST
+
+#define SIGNAL_COUNT (sizeof(signal_table) / sizeof(signal_table[0]))
+
+// Access macros for C
+#define SIGNAL_NAME(i) (signal_table[i].name)
+#define SIGNAL_LENGTH(i) (signal_table[i].value.length)
+#define SIGNAL_START(i) (signal_table[i].value.start)
+#define SIGNAL_MIN(i) (signal_table[i].value.min)
+#define SIGNAL_MAX(i) (signal_table[i].value.max)
+
+#define INTERVAL 40
 
 #endif // __cplusplus
 

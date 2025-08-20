@@ -95,7 +95,7 @@ static const uint8_t server_addr[] = {0x01, 0x04, 0x03, 0x04, 0x05, 0xC0};
 static const uint8_t client_addr[] = {0x10, 0x40, 0x30, 0x40, 0x50, 0xC0};
 
 // Setting::INTERVAL, change when setting is updated.
-static const int INTERVAL = 40;
+// static const int INTERVAL = 40;
 static char buffer[MSGLEN];
 
 static const struct ble_gatt_svc_def new_ble_svc_gatt_defs[] = {

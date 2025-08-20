@@ -6,6 +6,7 @@
 #include <arpa/inet.h>
 #include <sys/types.h>
 #include <netinet/in.h>
+#include <cstring>
 
 void TCPService::run(void)
 {
@@ -41,24 +42,28 @@ void TCPService::run(void)
           if (connectionHandle >= 0)
           {
             std::cout << "Connected to client." << std::endl;
-            status = true;
 
-            while (1)
+            uint8_t tempBuffer[BUFLEN]{0};
+            while (!end)
             {
-              mtx.lock();
-              if (BUFLEN != write(connectionHandle, buffer, BUFLEN))
+              status = true;
+
+              {
+                std::scoped_lock<std::mutex> lock(mtx);
+                memcpy(tempBuffer, buffer, BUFLEN);
+              }
+
+              if (BUFLEN != write(connectionHandle, tempBuffer, BUFLEN))
               {
                 std::cout << "Failed to write." << std::endl;
-                mtx.unlock();
+                status = false;
                 break;
               }
-              mtx.unlock();
-              usleep(Setting::INTERVAL * 1000);
+              std::this_thread::sleep_for(std::chrono::milliseconds(Setting::INTERVAL));
             }
 
             shutdown(connectionHandle, SHUT_RDWR);
             close(connectionHandle);
-            status = false;
           }
           else
           {

@@ -3,16 +3,21 @@
 
 #include <QPainter>
 #include <QWidget>
+#include <QMediaPlayer>
+#include <QAudioOutput>
 
 class Canvas : public QWidget {
     QPainter *painter{};
 
 private:
+    QMediaPlayer mediaPlayer;
+    QAudioOutput audioOutput;
+
     /**
- * @brief A Function to set the current speed
- *
- * @param speed The current speed
- */
+     * @brief A Function to set the current speed
+     *
+     * @param speed The current speed
+     */
     void set_speed(int speed);
 
     /**
@@ -30,23 +35,11 @@ private:
     static void set_battery(int battery_percent);
 
     /**
- * @brief Function to turn on [left, right, warning] blinkers or off
- *
- * @param blinker_state The state of the blinker, ether on [left, right, warning] or off
- */
-    static void set_blinker(int blinker_state);
-
-    /**
      * @brief Function to display the disconnect warning
      *
      * @param status The status of connection its ether true [connected] or false [not connected]
      */
     static void is_connected(bool status);
-
-    /**
- * @brief A Helper Function to calculate the angle of the needle from the current speed
- */
-    [[nodiscard]] static int speed_from_angle();
 
 public:
     explicit Canvas(QWidget *parent = nullptr);

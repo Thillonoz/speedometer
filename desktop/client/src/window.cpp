@@ -7,8 +7,7 @@
 
 static constexpr QColor bg_color = QColor(122, 29, 191);
 
-Window::Window(QWidget *parent, COMService &comservice)
-    : QDialog(parent), comservice(comservice) // <-- initialize here
+Window::Window(COMService &comservice) : comservice(comservice) // <-- initialize here
 {
     setWindowTitle("Client");
     setFixedSize(800, 600);
