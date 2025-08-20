@@ -41,11 +41,6 @@ private:
      */
     static void is_connected(bool status);
 
-    /**
-     * @brief A Helper Function to calculate the angle of the needle from the current speed
-     */
-    [[nodiscard]] static int speed_from_angle();
-
 public:
     explicit Canvas(QWidget *parent = nullptr);
 
