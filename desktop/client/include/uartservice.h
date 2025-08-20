@@ -8,7 +8,7 @@
 
 class UARTService : public COMService, public QThread
 {
-    const QString serial_name = "/dev/ttyUSB0";
+    const QString serial_name = UART_CPORT;
 
 private:
     void run(void) override;
