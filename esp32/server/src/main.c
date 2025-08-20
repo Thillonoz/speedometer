@@ -12,7 +12,6 @@
 #include "setting.h"
 #include <stdbool.h>
 
-#define UART_BLE_TESTING // GPIO testing, comment out to disable
 #ifdef UART_BLE_TESTING
 
 #include "driver/gpio.h"
@@ -398,9 +397,9 @@ void uart_ble_task(void *arg)
 #endif
             ESP_LOGE(TAG, "Error in receiving data from UART");
 
-            buffer[0] = 0x69; // Default value if no data received
-            buffer[1] = 0x89; // Default value if no data received
-            buffer[2] = 0xd9; // Default value if no data received
+            buffer[0] = 0x00;
+            buffer[1] = 0x00;
+            buffer[2] = 0x00;
         }
         vTaskDelay(pdMS_TO_TICKS(INTERVAL));
     }
@@ -408,7 +407,9 @@ void uart_ble_task(void *arg)
 
 void app_main()
 {
+#ifdef UART_BLE_TESTING
     tempstart();
+#endif
 
     // UART configuration
     uart_config_t config = {
