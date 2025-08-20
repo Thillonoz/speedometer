@@ -136,8 +136,6 @@ Canvas::Canvas(QWidget *parent) : QWidget(parent), mediaPlayer(this), audioOutpu
     // Audio setup once
     mediaPlayer.setAudioOutput(&audioOutput);
     audioOutput.setVolume(sound_max_volume);
-
-    current_speed = max_speed;
 }
 
 void Canvas::paintEvent(QPaintEvent *event) {
@@ -301,7 +299,7 @@ void Canvas::show_text_speed() const {
         speed_text_size_h);
 
     painter->drawText(icon_rect, Qt::AlignCenter, speed_icon);
-    painter->drawText(text_rect, Qt::AlignCenter, QString::number(speed_from_angle()) + QString(" km/h"));
+    painter->drawText(text_rect, Qt::AlignCenter, QString::number(current_speed) + QString(" km/h"));
 }
 
 void Canvas::show_disconnect_warning() const {
@@ -327,21 +325,6 @@ void Canvas::show_disconnect_warning() const {
     painter->drawText(icon_rect, Qt::AlignCenter, disconnect_icon);
     painter->setFont(font_icon);
     painter->drawText(text_rect, Qt::AlignCenter, QString("Connection Error!"));
-}
-
-int Canvas::speed_from_angle() {
-    const float angle_range = (circle_end_angle - circle_start_angle) - 2 * line_offset_angle;
-    const float angle_deg = qRadiansToDegrees(current_angle_deg);
-    float normalized_angle = circle_end_angle - line_offset_angle - angle_deg;
-
-    if (normalized_angle < 0)
-        normalized_angle = 0;
-    if (normalized_angle > angle_range)
-        normalized_angle = angle_range;
-
-    float percentage = normalized_angle / angle_range;
-    int speed = static_cast<int>(percentage * max_speed);
-    return speed;
 }
 
 void Canvas::show_temperature() {
@@ -478,6 +461,7 @@ void Canvas::set_speed(int speed) {
     const float angle_deg = circle_end_angle - line_offset_angle - (percentage * angle_range);
     target_angle_deg = qDegreesToRadians(angle_deg);
 
+    current_speed = speed;
     current_angle_deg = target_angle_deg;
 }
 
