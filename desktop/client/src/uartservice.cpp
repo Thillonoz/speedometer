@@ -8,7 +8,7 @@
 void UARTService::run(void)
 {
     QSerialPort serial;
-    serial.setPortName(serial_name);
+    serial.setPortName(UART_CPORT);
     serial.setBaudRate(BAUDRATE);
     serial.setDataBits(QSerialPort::Data8);
     serial.setParity(QSerialPort::NoParity);
@@ -49,7 +49,7 @@ void UARTService::run(void)
                 qint64 bytesRead = serial.read(reinterpret_cast<char *>(temp), sizeof(temp));
                 if (bytesRead != BUFLEN)
                 {
-                    qDebug() << "dies, not match expected size | " << bytesRead;
+                    qDebug() << "does not match expected size | " << bytesRead;
                     status = false;
                     break;
                 }

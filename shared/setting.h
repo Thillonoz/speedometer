@@ -11,9 +11,8 @@
     {{1, 22, 0, 1}, "left_turn_signal"},  \
     {{1, 23, 0, 1}, "right_turn_signal"}, \
 }
+
 #ifdef __cplusplus
-
-
 #include <map>
 #include <tuple>
 #include <string>
@@ -63,7 +62,6 @@ namespace Setting
     }
 }
 #else
-
 #include <stdint.h>
 
 #define UART UART_NUM_0
@@ -88,7 +86,6 @@ static const signal_entry_t signal_table[] = SIGNAL_LIST;
 
 #define SIGNAL_COUNT (sizeof(signal_table) / sizeof(signal_table[0]))
 
-// Access macros for C
 #define SIGNAL_NAME(i) (signal_table[i].name)
 #define SIGNAL_LENGTH(i) (signal_table[i].value.length)
 #define SIGNAL_START(i) (signal_table[i].value.start)
