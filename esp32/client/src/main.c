@@ -346,7 +346,7 @@ void client_task(void *pvParameters)
                 fflush(stdout);
             }
         }
-        vTaskDelay(pdMS_TO_TICKS(40));
+        vTaskDelay(pdMS_TO_TICKS(INTERVAL / 2));
     }
 }
 
