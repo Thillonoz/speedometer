@@ -401,7 +401,7 @@ void uart_ble_task(void *arg)
             buffer[1] = 0x00;
             buffer[2] = 0x00;
         }
-        vTaskDelay(pdMS_TO_TICKS(INTERVAL));
+        vTaskDelay(pdMS_TO_TICKS(INTERVAL/2));
     }
 }
 

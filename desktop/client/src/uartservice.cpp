@@ -61,8 +61,6 @@ void UARTService::run(void)
 
                 serial.flush();
             }
-
-            msleep(Setting::INTERVAL);
         }
     }
 

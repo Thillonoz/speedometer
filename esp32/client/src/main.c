@@ -355,7 +355,7 @@ void client_task(void *pvParameters)
         //printf("written: %d\n", written);
 
         fflush(stdout);
-        vTaskDelay(pdMS_TO_TICKS(40));
+        vTaskDelay(pdMS_TO_TICKS(INTERVAL / 2));
     }
 }
 

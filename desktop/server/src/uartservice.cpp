@@ -73,7 +73,7 @@ void UARTService::run()
             }
 
             serial.flush();
-            QThread::msleep(Setting::INTERVAL);
+            QThread::msleep(Setting::INTERVAL/2);
         }
 
         if (!serial.isOpen())
