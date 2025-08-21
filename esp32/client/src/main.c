@@ -85,17 +85,17 @@ static int on_read(uint16_t conn_handle,
         os_mbuf_copydata(attr->om, 0, len, tmp);
         tmp[len] = '\0';
         memcpy(buffer, tmp, BUFLEN);
-        ESP_LOGI(TAG, "READ OK (%u bytes)", len);
+        //ESP_LOGI(TAG, "READ OK (%u bytes)", len);
         // printf("TMP BYTE: %x %x %x\n", tmp[0], tmp[1], tmp[2]);
         //  printf("BUF BYTE: %x %x %x\n", buffer[0], buffer[1], buffer[2]);
     }
     else if (error->status == BLE_HS_EDONE)
     {
-        ESP_LOGI(TAG, "READ complete");
+        //ESP_LOGI(TAG, "READ complete");
     }
     else
     {
-        ESP_LOGE(TAG, "READ failed: %d", error->status);
+        //ESP_LOGE(TAG, "READ failed: %d", error->status);
     }
     return 0;
 }
@@ -115,7 +115,7 @@ static int on_descriptor_discovery(uint16_t conn_handle,
             int rc = ble_gattc_write_flat(conn_handle, dsc->handle, value, sizeof(value), NULL, NULL);
             if (rc != 0)
             {
-                ESP_LOGE(TAG, "Failed to write CCCD; rc=%d", rc);
+                //ESP_LOGE(TAG, "Failed to write CCCD; rc=%d", rc);
             }
             else
             {
@@ -346,13 +346,13 @@ void client_task(void *pvParameters)
             int rc = ble_gattc_read(connection, chrval_handle, on_read, NULL);
             if (rc != 0)
             {
-                ESP_LOGE(TAG, "ble_gattc_read failed: %d", rc);
+                //ESP_LOGE(TAG, "ble_gattc_read failed: %d", rc);
             }
         }
 
-        // printf("UART BYTE: %x %x %x\n", buffer[0], buffer[1], buffer[2]);
+        //printf("UART BYTE: %x %x %x\n", buffer[0], buffer[1], buffer[2]);
         uart_write_bytes(UART, buffer, BUFLEN);
-        // printf("written: %d\n", written);
+        //printf("written: %d\n", written);
 
         fflush(stdout);
         vTaskDelay(pdMS_TO_TICKS(40));
@@ -408,7 +408,7 @@ void app_main(void)
     assert(pdTRUE == xTaskCreate(client_task, "client_task", 4096, NULL, 8, NULL));
 
     // printf("START\n");
-    ESP_LOGI(TAG, "BLE Host Task Started");
+    //ESP_LOGI(TAG, "BLE Host Task Started");
     nimble_port_run(); /* Returns only when nimble_port_stop() is called */
     nimble_port_freertos_deinit();
 }
