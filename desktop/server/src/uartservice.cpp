@@ -17,7 +17,7 @@ void UARTService::run()
     serial.setParity(QSerialPort::NoParity);
     serial.setStopBits(QSerialPort::OneStop);
     serial.setFlowControl(QSerialPort::NoFlowControl);
-    
+
     while (true)
     {
         if (!serial.open(QSerialPort::WriteOnly))
@@ -35,7 +35,7 @@ void UARTService::run()
             mutex.lock();
             QByteArray data(reinterpret_cast<const char *>(buffer), BUFLEN);
 
-//#define UART_BLE_TESTING 1
+// #define UART_BLE_TESTING 1
 #if UART_BLE_TESTING
             qDebug() << buffer[0] << buffer[1] << buffer[2];
             qDebug() << data.toHex();
@@ -43,38 +43,39 @@ void UARTService::run()
 
             serial.write(data);
 
-        while (status)
-        {
+            while (status)
+            {
 
-            mutex.lock();
-            QByteArray data(reinterpret_cast<const char *>(buffer), BUFLEN);
+                mutex.lock();
+                QByteArray data(reinterpret_cast<const char *>(buffer), BUFLEN);
 
 #define UART_BLE_TESTING 1
 #if UART_BLE_TESTING
-            qDebug() << buffer[0] << buffer[1] << buffer[2];
-            qDebug() << data.toHex();
+                qDebug() << buffer[0] << buffer[1] << buffer[2];
+                qDebug() << data.toHex();
 #endif
 
-            serial.write(data);
+                serial.write(data);
 
-            mutex.unlock();
+                mutex.unlock();
 
-            if (serial.error() == QSerialPort::ResourceError)
-            {
-                qDebug() << "Device disconnected (ResourceError). Exiting loop.";
-                serial.close();
-                status = false;
-                break;
+                if (serial.error() == QSerialPort::ResourceError)
+                {
+                    qDebug() << "Device disconnected (ResourceError). Exiting loop.";
+                    serial.close();
+                    status = false;
+                    break;
+                }
+
+                serial.flush();
+                QThread::msleep(Setting::INTERVAL / 2);
             }
 
-            serial.flush();
-            QThread::msleep(Setting::INTERVAL/2);
-        }
-
-        if (!serial.isOpen())
-        {
-            serial.close();
-            status = false;
+            if (!serial.isOpen())
+            {
+                serial.close();
+                status = false;
+            }
         }
     }
 }
