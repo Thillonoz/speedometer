@@ -3,8 +3,6 @@
 #include <QSerialPort>
 #include "uartservice.h"
 
-#include <iostream>
-
 void UARTService::run(void)
 {
     QSerialPort serial;
@@ -25,44 +23,36 @@ void UARTService::run(void)
             continue;
         }
 
-        qDebug() << "Serial port opened successfully";
-        status = true;
-
         uint8_t temp[sizeof(buffer)]{0};
-
-        while (status)
+        while (!end)
         {
-            QSerialPort::SerialPortError e = serial.error();
-            if (e != QSerialPort::NoError)
+            if (const QSerialPort::SerialPortError e = serial.error(); e != QSerialPort::NoError)
             {
-                serial.clear(QSerialPort::AllDirections);
-                serial.setDataTerminalReady(false);
-                serial.setRequestToSend(false);
                 serial.close();
-
                 status = false;
                 break;
             }
 
-            if (serial.waitForReadyRead(Setting::INTERVAL))
+            if (serial.waitForReadyRead(3 * Setting::INTERVAL))
             {
                 qint64 bytesRead = serial.read(reinterpret_cast<char *>(temp), sizeof(temp));
                 if (bytesRead != BUFLEN)
                 {
                     qDebug() << "does not match expected size | " << bytesRead;
                     status = false;
-                    break;
+                    end = true;
                 }
                 else
                 {
+                    status = true;
+                    end = false;
                     std::scoped_lock<std::mutex> locker{mtx};
                     std::memcpy(buffer, temp, sizeof(buffer));
                 }
 
+                end = false;
                 serial.flush();
             }
-
-            msleep(Setting::INTERVAL);
         }
     }
 
@@ -73,12 +63,13 @@ void UARTService::run(void)
         serial.setRequestToSend(false);
         serial.close();
     }
-    status = false;
+    end = true;
 }
 
 UARTService::~UARTService()
 {
     status = false;
+    end = true;
 
     quit();
     wait();
