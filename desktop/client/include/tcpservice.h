@@ -14,7 +14,6 @@ class TCPService : public COMService
 
     void run(void) override;
    
-
 public:
     TCPService() = default;
     ~TCPService()

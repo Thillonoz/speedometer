@@ -8,7 +8,6 @@
 
 class UARTService : public COMService, public QThread
 {
-    const QString serial_name = UART_CPORT;
     std::atomic<bool> end{false};
 
 private:

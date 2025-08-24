@@ -4,8 +4,6 @@
 
 #include "uartservice.h"
 
-#include <iostream>
-
 #include "setting.h"
 
 static std::mutex mutex;
@@ -13,37 +11,20 @@ static std::mutex mutex;
 void UARTService::run()
 {
     QSerialPort serial;
+    serial.setPortName(UART_SPORT);
     serial.setBaudRate(BAUDRATE);
     serial.setDataBits(QSerialPort::Data8);
     serial.setParity(QSerialPort::NoParity);
     serial.setStopBits(QSerialPort::OneStop);
     serial.setFlowControl(QSerialPort::NoFlowControl);
-    
+
     while (true)
     {
-        serial.setPortName(port_name);
-        if (!serial.isOpen())
+        if (!serial.open(QSerialPort::WriteOnly))
         {
-            if (!serial.open(QSerialPort::WriteOnly))
-            {
-                qDebug() << "Failed to open initial serial port.";
-                qDebug() << "Attempting to open alternate ports...";
-                char tempPort[] = "/dev/ttyUSB0";
-                for (size_t i = 0; i < 10; i++)
-                {
-                    char usbPortNumber = '0' + i;
-                    tempPort[11] = usbPortNumber;
-                    serial.setPortName(tempPort);
-
-                    if (serial.open(QSerialPort::WriteOnly))
-                    {
-                        qDebug() << "Success on opening alternate port: " << tempPort;
-                        break;
-                    }
-                }
-                QThread::msleep(Setting::INTERVAL);
-                continue;
-            }
+            qDebug() << "Failed to open a serial port";
+            QThread::msleep(Setting::INTERVAL);
+            continue;
         }
 
         status = serial.isOpen();
@@ -54,7 +35,7 @@ void UARTService::run()
             mutex.lock();
             QByteArray data(reinterpret_cast<const char *>(buffer), BUFLEN);
 
-#define UART_BLE_TESTING 1
+// #define UART_BLE_TESTING 1
 #if UART_BLE_TESTING
             qDebug() << buffer[0] << buffer[1] << buffer[2];
             qDebug() << data.toHex();
@@ -73,7 +54,7 @@ void UARTService::run()
             }
 
             serial.flush();
-            QThread::msleep(Setting::INTERVAL/2);
+            QThread::msleep(Setting::INTERVAL / 2);
         }
 
         if (!serial.isOpen())

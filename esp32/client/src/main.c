@@ -15,8 +15,8 @@
 #define TAG "CLIENT"
 #define DEVICE_NAME "BLE_CLIENT"
 
-#define GATT_SVC_UUID 0xABC0 /* 16 Bit Service UUID */
-#define GATT_CHR_UUID 0xABC1 /* 16 Bit Service Characteristic UUID */
+#define GATT_SVC_UUID 0xABC0
+#define GATT_CHR_UUID 0xABC1
 
 static int client_gap_event(struct ble_gap_event *event, void *arg);
 
@@ -25,21 +25,17 @@ static uint16_t connection;
 static ble_addr_t peer_addr;
 static uint16_t chrval_handle;
 
-/* For random static address, 2 MSB bits of the first byte shall be 0b11.
-   I.e. addr[5] shall be in the range of 0xC0 to 0xFF */
 static const uint8_t server_addr[] = {0x01, 0x04, 0x03, 0x04, 0x05, 0xC0};
 static const uint8_t client_addr[] = {0x10, 0x40, 0x30, 0x40, 0x50, 0xC0};
 
 static uint8_t buffer[BUFLEN];
 
-/* ===== Helpers ===== */
-
 static void client_scan(void)
 {
     struct ble_gap_disc_params disc_params = {0};
 
-    disc_params.passive = 1;           /* Passive scan */
-    disc_params.filter_duplicates = 1; /* De-dup adv reports */
+    disc_params.passive = 1;
+    disc_params.filter_duplicates = 1;
 
     int status = ble_gap_disc(own_addr_type, BLE_HS_FOREVER, &disc_params, client_gap_event, NULL);
     if (status != 0)
@@ -70,8 +66,6 @@ static void client_connect(const struct ble_gap_disc_desc *disc)
     }
 }
 
-/* ===== GATT callbacks ===== */
-
 static int on_read(uint16_t conn_handle,
                    const struct ble_gatt_error *error,
                    struct ble_gatt_attr *attr, void *arg)
@@ -85,17 +79,6 @@ static int on_read(uint16_t conn_handle,
         os_mbuf_copydata(attr->om, 0, len, tmp);
         tmp[len] = '\0';
         memcpy(buffer, tmp, BUFLEN);
-        ESP_LOGI(TAG, "READ OK (%u bytes)", len);
-        // printf("TMP BYTE: %x %x %x\n", tmp[0], tmp[1], tmp[2]);
-        //  printf("BUF BYTE: %x %x %x\n", buffer[0], buffer[1], buffer[2]);
-    }
-    else if (error->status == BLE_HS_EDONE)
-    {
-        ESP_LOGI(TAG, "READ complete");
-    }
-    else
-    {
-        // ESP_LOGE(TAG, "READ failed: %d", error->status);
     }
     return 0;
 }
@@ -117,17 +100,9 @@ static int on_descriptor_discovery(uint16_t conn_handle,
             {
                 ESP_LOGE(TAG, "Failed to write CCCD; rc=%d", rc);
             }
-            else
-            {
-                ESP_LOGI(TAG, "Notifications enabled");
-            }
         }
     }
-    else if (error->status == BLE_HS_EDONE)
-    {
-        ESP_LOGI(TAG, "Descriptor discovery complete.");
-    }
-    else
+    else if (error->status != BLE_HS_EDONE)
     {
         ESP_LOGE(TAG, "Descriptor discovery failed: %d", error->status);
         ble_gap_terminate(conn_handle, BLE_ERR_REM_USER_CONN_TERM);
@@ -143,7 +118,6 @@ static int on_characteristic_discovery(uint16_t conn_handle,
     if (error->status == 0 && chr != NULL)
     {
         chrval_handle = chr->val_handle;
-        ESP_LOGI(TAG, "Characteristic found (handle=%u), discovering descriptors...", chrval_handle);
         int rc = ble_gattc_disc_all_dscs(conn_handle, chr->val_handle, chr->val_handle + 1,
                                          on_descriptor_discovery, NULL);
         if (rc != 0)
@@ -152,11 +126,7 @@ static int on_characteristic_discovery(uint16_t conn_handle,
             ble_gap_terminate(conn_handle, BLE_ERR_REM_USER_CONN_TERM);
         }
     }
-    else if (error->status == BLE_HS_EDONE)
-    {
-        ESP_LOGI(TAG, "Characteristic discovery complete.");
-    }
-    else
+    else if (error->status != BLE_HS_EDONE)
     {
         ESP_LOGE(TAG, "Characteristic discovery error: %d", error->status);
         ble_gap_terminate(conn_handle, BLE_ERR_REM_USER_CONN_TERM);
@@ -173,7 +143,6 @@ static int on_service_discovery(uint16_t conn_handle,
     {
         uint16_t svc_start_handle = service->start_handle;
         uint16_t svc_end_handle = service->end_handle;
-        ESP_LOGI(TAG, "Service found [%u..%u], discovering characteristic...", svc_start_handle, svc_end_handle);
         int rc = ble_gattc_disc_chrs_by_uuid(conn_handle, svc_start_handle, svc_end_handle,
                                              BLE_UUID16_DECLARE(GATT_CHR_UUID),
                                              on_characteristic_discovery, NULL);
@@ -183,19 +152,13 @@ static int on_service_discovery(uint16_t conn_handle,
             ble_gap_terminate(conn_handle, BLE_ERR_REM_USER_CONN_TERM);
         }
     }
-    else if (error->status == BLE_HS_EDONE)
-    {
-        ESP_LOGI(TAG, "Service discovery complete.");
-    }
-    else
+    else if (error->status != BLE_HS_EDONE)
     {
         ESP_LOGE(TAG, "Service discovery failed; status=%d", error->status);
         ble_gap_terminate(conn_handle, BLE_ERR_REM_USER_CONN_TERM);
     }
     return 0;
 }
-
-/* ===== GAP event handler ===== */
 
 static int client_gap_event(struct ble_gap_event *event, void *arg)
 {
@@ -212,25 +175,21 @@ static int client_gap_event(struct ble_gap_event *event, void *arg)
         status = ble_hs_adv_parse_fields(&fields, event->disc.data, event->disc.length_data);
         if (status == 0)
         {
-
             bool connected = false;
             if (0 == memcmp(peer_addr.val, event->disc.addr.val, sizeof(event->disc.addr.val)))
             {
-                ESP_LOGI(TAG, "Device already connected");
                 connected = true;
                 break;
             }
 
             if (!connected)
             {
-                /* Only consider connectable adv/dir_ind */
                 if ((event->disc.event_type == BLE_HCI_ADV_RPT_EVTYPE_ADV_IND) ||
                     (event->disc.event_type == BLE_HCI_ADV_RPT_EVTYPE_DIR_IND))
                 {
 
                     if (0 == memcmp(event->disc.addr.val, server_addr, sizeof(server_addr)))
                     {
-                        /* Require that advertised UUIDs include our service */
                         for (int i = 0; i < fields.num_uuids16; i++)
                         {
                             if (ble_uuid_u16(&fields.uuids16[i].u) == GATT_SVC_UUID)
@@ -249,7 +208,6 @@ static int client_gap_event(struct ble_gap_event *event, void *arg)
     case BLE_GAP_EVENT_CONNECT:
         if (event->connect.status == 0)
         {
-            ESP_LOGI(TAG, "Connection established");
             assert(0 == ble_gap_conn_find(event->connect.conn_handle, &desc));
             connection = event->connect.conn_handle;
             memcpy(peer_addr.val, desc.peer_id_addr.val, sizeof(desc.peer_id_addr.val));
@@ -294,7 +252,6 @@ static int client_gap_event(struct ble_gap_event *event, void *arg)
             len = sizeof(buf) - 1;
         os_mbuf_copydata(event->notify_rx.om, 0, len, buf);
         buf[len] = '\0';
-        // printf("Notify: %s\n", buf);
         break;
     }
 
@@ -310,7 +267,6 @@ static int client_gap_event(struct ble_gap_event *event, void *arg)
     return status;
 }
 
-/* ===== Host callbacks ===== */
 static void client_on_reset(int reason)
 {
     ESP_LOGE(TAG, "Resetting state; reason=%d", reason);
@@ -318,7 +274,7 @@ static void client_on_reset(int reason)
 
 static void client_on_sync(void)
 {
-    assert(0 == ble_hs_id_set_rnd(client_addr)); /* random static */
+    assert(0 == ble_hs_id_set_rnd(client_addr));
     assert(0 == ble_hs_util_ensure_addr(0));
     assert(0 == ble_hs_id_infer_auto(0, &own_addr_type));
 
@@ -327,8 +283,6 @@ static void client_on_sync(void)
 
     client_scan();
 }
-
-/* ===== App task ===== */
 
 void client_task(void *pvParameters)
 {
@@ -341,7 +295,6 @@ void client_task(void *pvParameters)
             int rc = ble_gattc_read(connection, chrval_handle, on_read, NULL);
             if (rc == 0)
             {
-
                 uart_write_bytes(UART, buffer, BUFLEN);
                 fflush(stdout);
             }
@@ -350,16 +303,8 @@ void client_task(void *pvParameters)
     }
 }
 
-/* ===== Entry ===== */
 void app_main(void)
 {
-
-    // TEMP LED to test
-    ESP_ERROR_CHECK(gpio_reset_pin(GPIO_NUM_4));
-
-    ESP_ERROR_CHECK(gpio_set_direction(GPIO_NUM_4, GPIO_MODE_OUTPUT)); // Configure pin 4 as a digital output pin
-
-    // UART config
     uart_config_t uart_config = {
         .baud_rate = BAUDRATE,
         .data_bits = UART_DATA_8_BITS,
@@ -370,12 +315,6 @@ void app_main(void)
     };
     ESP_ERROR_CHECK(uart_driver_install(UART, 256, 0, 0, NULL, 0));
     ESP_ERROR_CHECK(uart_param_config(UART, &uart_config));
-    // (Optional) Set pins if needed: uart_set_pin(UART, TX, RX, RTS, CTS);
-
-    // see settings for bits placement
-    // buffer[0] = 0b00010100; // 20 (speed)
-    // buffer[1] = 0b10000010; // 1 and 1 (battery and temperature)
-    // buffer[2] = 0b11000000; // true and true (light)
 
     esp_err_t status = nvs_flash_init();
     if (status == ESP_ERR_NVS_NO_FREE_PAGES || status == ESP_ERR_NVS_NEW_VERSION_FOUND)
@@ -387,19 +326,14 @@ void app_main(void)
 
     ESP_ERROR_CHECK(nimble_port_init());
 
-    /* Configure the host. */
     ble_hs_cfg.reset_cb = client_on_reset;
     ble_hs_cfg.sync_cb = client_on_sync;
     ble_hs_cfg.store_status_cb = ble_store_util_status_rr;
 
-    /* Set the default device name. */
     assert(0 == ble_svc_gap_device_name_set(DEVICE_NAME));
 
-    /* Periodic task that triggers reads (and logs notifications when they arrive). */
     assert(pdTRUE == xTaskCreate(client_task, "client_task", 4096, NULL, 8, NULL));
 
-    // printf("START\n");
-    ESP_LOGI(TAG, "BLE Host Task Started");
-    nimble_port_run(); /* Returns only when nimble_port_stop() is called */
+    nimble_port_run();
     nimble_port_freertos_deinit();
 }
