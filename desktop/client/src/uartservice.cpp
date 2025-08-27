@@ -40,7 +40,6 @@ void UARTService::run(void)
                 {
                     qDebug() << "does not match expected size | " << bytesRead;
                     status = false;
-                    end = true;
                 }
                 else
                 {
@@ -50,7 +49,6 @@ void UARTService::run(void)
                     std::memcpy(buffer, temp, sizeof(buffer));
                 }
 
-                end = false;
                 serial.flush();
             }
         }

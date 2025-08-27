@@ -23,50 +23,56 @@ void UARTService::run()
         if (!serial.open(QSerialPort::WriteOnly))
         {
             qDebug() << "Failed to open a serial port";
+            status = false;
             QThread::msleep(Setting::INTERVAL);
             continue;
         }
 
-        status = serial.isOpen();
-
-        while (status)
+        while (!end)
         {
 
-            mutex.lock();
-            QByteArray data(reinterpret_cast<const char *>(buffer), BUFLEN);
-
-// #define UART_BLE_TESTING 1
-#if UART_BLE_TESTING
-            qDebug() << buffer[0] << buffer[1] << buffer[2];
-            qDebug() << data.toHex();
-#endif
-
-            serial.write(data);
-
-            mutex.unlock();
-
-            if (serial.error() == QSerialPort::ResourceError)
+            if (serial.error() != QSerialPort::NoError)
             {
-                qDebug() << "Device disconnected (ResourceError). Exiting loop.";
                 serial.close();
                 status = false;
                 break;
             }
+            else
+            {
+                status = true;
+                end = false;
+                mutex.lock();
+                QByteArray data(reinterpret_cast<const char *>(buffer), BUFLEN);
 
+// #define UART_BLE_TESTING 1
+#if UART_BLE_TESTING
+                qDebug() << buffer[0] << buffer[1] << buffer[2];
+                qDebug() << data.toHex();
+#endif
+
+                serial.write(data);
+                mutex.unlock();
+
+                QThread::msleep(Setting::INTERVAL / 2);
+            }
             serial.flush();
-            QThread::msleep(Setting::INTERVAL / 2);
-        }
-
-        if (!serial.isOpen())
-        {
-            serial.close();
-            status = false;
         }
     }
+    if (serial.isOpen())
+    {
+        serial.clear(QSerialPort::AllDirections);
+        serial.setDataTerminalReady(false);
+        serial.setRequestToSend(false);
+        serial.close();
+    }
+    end = true;
 }
 
 UARTService::~UARTService()
 {
+    status = false;
+    ebd = true;
+
     quit();
     wait();
 }

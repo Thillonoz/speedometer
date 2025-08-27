@@ -40,10 +40,10 @@ void tempstart(void)
 
     gpio_reset_pin(LED_GPIO5);
     gpio_config_t io_conf_2 = {.pin_bit_mask = (1ULL << LED_GPIO5),
-                             .mode = GPIO_MODE_OUTPUT,
-                             .pull_up_en = GPIO_PULLUP_DISABLE,
-                             .pull_down_en = GPIO_PULLDOWN_DISABLE,
-                             .intr_type = GPIO_INTR_DISABLE};
+                               .mode = GPIO_MODE_OUTPUT,
+                               .pull_up_en = GPIO_PULLUP_DISABLE,
+                               .pull_down_en = GPIO_PULLDOWN_DISABLE,
+                               .intr_type = GPIO_INTR_DISABLE};
 
     ESP_ERROR_CHECK(gpio_config(&io_conf_2));
 }
@@ -53,8 +53,9 @@ void tempBitCheck(int _gpio_pin, uint8_t *_buffer, uint8_t _bool)
     if (_bool == true)
     {
         if (_buffer[0] == 0b00000001 || _buffer[1] == 0b00000001 || _buffer[1] == 0b10000000 ||
-          _buffer[2] == 0b01000000 || _buffer[2] == 0b10000000 || _buffer[2] == 0b11000000) {
-          gpio_set_level(_gpio_pin, 1);
+            _buffer[2] == 0b01000000 || _buffer[2] == 0b10000000 || _buffer[2] == 0b11000000)
+        {
+            gpio_set_level(_gpio_pin, 1);
         }
         else
         {
@@ -83,7 +84,6 @@ void tempBitCheck(int _gpio_pin, uint8_t *_buffer, uint8_t _bool)
 static int server_gap_event(struct ble_gap_event *event, void *arg);
 static int service_gatt_handler(uint16_t conn_handle, uint16_t attr_handle,
                                 struct ble_gatt_access_ctxt *ctxt, void *arg);
-
 static uint8_t own_addr_type;
 static uint16_t ble_svc_gatt_read_val_handle;
 static uint16_t conn_handle_global = BLE_HS_CONN_HANDLE_NONE;
@@ -93,9 +93,8 @@ static uint16_t conn_handle_global = BLE_HS_CONN_HANDLE_NONE;
 static const uint8_t server_addr[] = {0x01, 0x04, 0x03, 0x04, 0x05, 0xC0};
 static const uint8_t client_addr[] = {0x10, 0x40, 0x30, 0x40, 0x50, 0xC0};
 
-// Setting::INTERVAL, change when setting is updated.
-// static const int INTERVAL = 40;
 static char buffer[MSGLEN];
+static uint8_t isConnectedToGUI = 0;
 
 static const struct ble_gatt_svc_def new_ble_svc_gatt_defs[] = {
     {
@@ -230,7 +229,10 @@ static int server_gap_event(struct ble_gap_event *event, void *)
     case BLE_GAP_EVENT_DISCONNECT:
         ESP_LOGI(TAG, "disconnect; reason=%d ", event->disconnect.reason);
         server_print_conn_desc(&event->disconnect.conn);
-        server_advertise(); /* Connection terminated; resume advertising. */
+        if (isConnectedToGUI == 1)
+        {
+            server_advertise(); /* Connection terminated; resume advertising. */
+        }
         conn_handle_global = BLE_HS_CONN_HANDLE_NONE;
         break;
 
@@ -295,13 +297,16 @@ static void server_on_sync(void)
 
     assert(0 == ble_gap_wl_set(&client, 1));
 
-    server_advertise();
+    if (isConnectedToGUI == 1) {
+        server_advertise();
+    }
 }
 
 /* Callback function for custom service */
 static int service_gatt_handler(uint16_t conn_handle, uint16_t attr_handle,
                                 struct ble_gatt_access_ctxt *ctxt, void *)
 {
+    int state = 0;
     switch (ctxt->op)
     {
     case BLE_GATT_ACCESS_OP_READ_CHR:
@@ -315,7 +320,7 @@ static int service_gatt_handler(uint16_t conn_handle, uint16_t attr_handle,
         if (rc != 0)
         {
             ESP_LOGE(TAG, "Error appending data to mbuf");
-            // return BLE_ATT_ERR_INSUFFICIENT_RES;
+            state = BLE_ATT_ERR_INSUFFICIENT_RES;
         }
 #ifdef UART_BLE_TESTING
         gpio_set_level(LED_GPIO5, 0);
@@ -329,7 +334,7 @@ static int service_gatt_handler(uint16_t conn_handle, uint16_t attr_handle,
         break;
     }
 
-    return 0;
+    return state;
 }
 
 static void gatt_svr_register_cb(struct ble_gatt_register_ctxt *ctxt, void *)
@@ -385,23 +390,39 @@ void uart_ble_task(void *arg)
         if (len == MSGLEN)
         {
 #ifdef UART_BLE_TESTING
-            tempBitCheck(LED_GPIO4,(uint8_t *)buffer, true);
+            tempBitCheck(LED_GPIO4, (uint8_t *)buffer, true);
 #endif
+            if (isConnectedToGUI == 0)
+            {
+                ESP_LOGI(TAG, "GUI connected, starting to advertise...");
+                server_advertise();
+            }
+            isConnectedToGUI = 1;
             struct os_mbuf *om = ble_hs_mbuf_from_flat(buffer, len);
             ble_gatts_notify_custom(conn_handle_global, ble_svc_gatt_read_val_handle, om);
         }
         else
         {
 #ifdef UART_BLE_TESTING
-            tempBitCheck(LED_GPIO4,(uint8_t *)buffer, false);
+            tempBitCheck(LED_GPIO4, (uint8_t *)buffer, false);
 #endif
             ESP_LOGE(TAG, "Error in receiving data from UART");
-
-            buffer[0] = 0x00;
-            buffer[1] = 0x00;
-            buffer[2] = 0x00;
+            
+            if (isConnectedToGUI == 1)
+            {
+                ESP_LOGE(TAG, "Disconnecting BLE connection...");
+                if (conn_handle_global != BLE_HS_CONN_HANDLE_NONE)
+                {
+                    ble_gap_terminate(conn_handle_global, BLE_ERR_REM_USER_CONN_TERM);
+                }
+                if (ble_gap_adv_active())
+                {
+                    ble_gap_adv_stop();
+                }
+            }
+            isConnectedToGUI = 0;
         }
-        vTaskDelay(pdMS_TO_TICKS(INTERVAL/2));
+        vTaskDelay(pdMS_TO_TICKS(INTERVAL / 2));
     }
 }
 

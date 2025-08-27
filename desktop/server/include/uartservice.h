@@ -5,6 +5,7 @@
 #include "comservice.h"
 
 class UARTService : public COMService, public QThread {
+std::atomic<bool>end{false};
 
 private:
     void run(void) override;
