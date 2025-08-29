@@ -12,68 +12,8 @@
 #include "setting.h"
 #include <stdbool.h>
 
-#ifdef UART_BLE_TESTING
-
-#include "driver/gpio.h"
-#include "esp_log.h"
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include <unistd.h>
-
-#define LED_GPIO4 GPIO_NUM_4
-#define LED_GPIO5 GPIO_NUM_5
-
-void tempstart(void)
-{
-    static const char *TAG = "LED_CONTROL";
-
-    ESP_LOGI(TAG, "Configuring GPIO...");
-
-    gpio_reset_pin(LED_GPIO4);
-    gpio_config_t io_conf = {.pin_bit_mask = (1ULL << LED_GPIO4),
-                             .mode = GPIO_MODE_OUTPUT,
-                             .pull_up_en = GPIO_PULLUP_DISABLE,
-                             .pull_down_en = GPIO_PULLDOWN_DISABLE,
-                             .intr_type = GPIO_INTR_DISABLE};
-
-    ESP_ERROR_CHECK(gpio_config(&io_conf));
-
-    gpio_reset_pin(LED_GPIO5);
-    gpio_config_t io_conf_2 = {.pin_bit_mask = (1ULL << LED_GPIO5),
-                               .mode = GPIO_MODE_OUTPUT,
-                               .pull_up_en = GPIO_PULLUP_DISABLE,
-                               .pull_down_en = GPIO_PULLDOWN_DISABLE,
-                               .intr_type = GPIO_INTR_DISABLE};
-
-    ESP_ERROR_CHECK(gpio_config(&io_conf_2));
-}
-
-void tempBitCheck(int _gpio_pin, uint8_t *_buffer, uint8_t _bool)
-{
-    if (_bool == true)
-    {
-        if (_buffer[0] == 0b00000001 || _buffer[1] == 0b00000001 || _buffer[1] == 0b10000000 ||
-            _buffer[2] == 0b01000000 || _buffer[2] == 0b10000000 || _buffer[2] == 0b11000000)
-        {
-            gpio_set_level(_gpio_pin, 1);
-        }
-        else
-        {
-            gpio_set_level(_gpio_pin, 0);
-        }
-    }
-    else
-    {
-        gpio_set_level(_gpio_pin, 1);
-    }
-}
-#endif
-
-#define UART UART_NUM_0
 #define BUF_SIZE (2 * SOC_UART_FIFO_LEN) // SOC_UART_FIFO_LEN
 #define MSGLEN BUFLEN
-
-// #include <ctype.h>
 
 #define TAG "SERVER_LOGGER"
 #define DEVICE_NAME "BLE_SERVER"
@@ -312,9 +252,6 @@ static int service_gatt_handler(uint16_t conn_handle, uint16_t attr_handle,
     case BLE_GATT_ACCESS_OP_READ_CHR:
     {
         ESP_LOGI(TAG, "Callback for read");
-#ifdef UART_BLE_TESTING
-        gpio_set_level(LED_GPIO5, 1);
-#endif
         fflush(stdout);
         int rc = os_mbuf_append(ctxt->om, buffer, sizeof(buffer));
         if (rc != 0)
@@ -322,9 +259,6 @@ static int service_gatt_handler(uint16_t conn_handle, uint16_t attr_handle,
             ESP_LOGE(TAG, "Error appending data to mbuf");
             state = BLE_ATT_ERR_INSUFFICIENT_RES;
         }
-#ifdef UART_BLE_TESTING
-        gpio_set_level(LED_GPIO5, 0);
-#endif
     }
 
     break;
@@ -389,9 +323,6 @@ void uart_ble_task(void *arg)
         int len = uart_read_bytes(UART, buffer, MSGLEN, pdMS_TO_TICKS(INTERVAL));
         if (len == MSGLEN)
         {
-#ifdef UART_BLE_TESTING
-            tempBitCheck(LED_GPIO4, (uint8_t *)buffer, true);
-#endif
             if (isConnectedToGUI == 0)
             {
                 ESP_LOGI(TAG, "GUI connected, starting to advertise...");
@@ -403,9 +334,6 @@ void uart_ble_task(void *arg)
         }
         else
         {
-#ifdef UART_BLE_TESTING
-            tempBitCheck(LED_GPIO4, (uint8_t *)buffer, false);
-#endif
             ESP_LOGE(TAG, "Error in receiving data from UART");
             
             if (isConnectedToGUI == 1)
@@ -428,9 +356,6 @@ void uart_ble_task(void *arg)
 
 void app_main()
 {
-#ifdef UART_BLE_TESTING
-    tempstart();
-#endif
 
     // UART configuration
     uart_config_t config = {

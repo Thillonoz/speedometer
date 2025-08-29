@@ -6,8 +6,6 @@
 
 #include "setting.h"
 
-static std::mutex mutex;
-
 void UARTService::run()
 {
     QSerialPort serial;
@@ -22,7 +20,6 @@ void UARTService::run()
     {
         if (!serial.open(QSerialPort::WriteOnly))
         {
-            qDebug() << "Failed to open a serial port";
             status = false;
             QThread::msleep(Setting::INTERVAL);
             continue;
@@ -41,18 +38,10 @@ void UARTService::run()
             {
                 status = true;
                 end = false;
-                mutex.lock();
+                std::scoped_lock<std::mutex>locker {mtx};
                 QByteArray data(reinterpret_cast<const char *>(buffer), BUFLEN);
 
-// #define UART_BLE_TESTING 1
-#if UART_BLE_TESTING
-                qDebug() << buffer[0] << buffer[1] << buffer[2];
-                qDebug() << data.toHex();
-#endif
-
                 serial.write(data);
-                mutex.unlock();
-
                 QThread::msleep(Setting::INTERVAL / 2);
             }
             serial.flush();
@@ -71,7 +60,7 @@ void UARTService::run()
 UARTService::~UARTService()
 {
     status = false;
-    ebd = true;
+    end = true;
 
     quit();
     wait();
