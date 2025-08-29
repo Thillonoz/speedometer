@@ -17,7 +17,6 @@ void UARTService::run(void)
     {
         if (!serial.open(QIODevice::ReadOnly))
         {
-            qDebug() << "Failed to open serial port";
             status = false;
             QThread::msleep(Setting::INTERVAL);
             continue;
@@ -38,7 +37,6 @@ void UARTService::run(void)
                 qint64 bytesRead = serial.read(reinterpret_cast<char *>(temp), sizeof(temp));
                 if (bytesRead != BUFLEN)
                 {
-                    qDebug() << "does not match expected size | " << bytesRead;
                     status = false;
                 }
                 else
